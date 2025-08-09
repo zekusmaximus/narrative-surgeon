@@ -10,6 +10,7 @@ import ManuscriptsScreen from './src/screens/ManuscriptsScreen';
 import ScenesScreen from './src/screens/ScenesScreen';
 import EditorScreen from './src/screens/EditorScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
+import RevisionWorkspace from './src/screens/RevisionWorkspace';
 import SettingsScreen from './src/screens/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
@@ -71,6 +72,14 @@ export default function App() {
             options={{
               title: 'AI Analysis',
               tabBarLabel: 'Analysis',
+            }}
+          />
+          <Tab.Screen
+            name="Revision"
+            component={RevisionWorkspace}
+            options={{
+              title: 'Revision Workspace',
+              tabBarLabel: 'Revision',
             }}
           />
           <Tab.Screen

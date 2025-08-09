@@ -240,3 +240,174 @@ export interface PacingProfile {
   beatsPerThousand: number;
   actBreaks: number[];
 }
+
+// Phase 3: Revision Workspace Types
+export interface RevisionSession {
+  id: string;
+  manuscriptId: string;
+  sessionType?: 'developmental' | 'line' | 'copy' | 'proof';
+  focusArea?: 'pacing' | 'character' | 'dialogue' | 'description' | 'overall';
+  startedAt: number;
+  endedAt?: number;
+  scenesRevised: number;
+  wordsChanged: number;
+  qualityDelta?: number;
+}
+
+export interface Edit {
+  id: string;
+  sceneId: string;
+  sessionId?: string;
+  editType?: 'ai_suggested' | 'manual' | 'accepted_suggestion' | 'rejected_suggestion';
+  beforeText: string;
+  afterText?: string;
+  startPosition: number;
+  endPosition: number;
+  rationale?: string;
+  impactScore?: number;
+  affectsPlot: boolean;
+  affectsCharacter: boolean;
+  affectsPacing: boolean;
+  createdAt: number;
+  appliedAt?: number;
+  revertedAt?: number;
+}
+
+export interface EditPattern {
+  id: string;
+  manuscriptId: string;
+  patternType?: 'overused_phrase' | 'filter_word' | 'passive_voice' | 'telling';
+  patternText?: string;
+  frequency: number;
+  severity: number;
+  autoFixAvailable: boolean;
+  suggestedAlternatives?: string[];
+}
+
+export interface CompAnalysis {
+  id: string;
+  manuscriptId: string;
+  compTitle: string;
+  compAuthor?: string;
+  openingSimilarity?: number;
+  pacingSimilarity?: number;
+  voiceSimilarity?: number;
+  structureSimilarity?: number;
+  marketPosition?: string;
+  keyDifferences?: string;
+  keySimilarities?: string;
+  analyzedAt?: number;
+}
+
+export interface BetaReaderPersona {
+  id: string;
+  manuscriptId: string;
+  personaType?: 'genre_fan' | 'literary_critic' | 'casual_reader' | 'agent' | 'editor';
+  expectations?: Record<string, any>;
+  likelyReactions?: Record<string, string>;
+  engagementCurve?: number[];
+  wouldContinueReading: boolean;
+  wouldRecommend: boolean;
+  primaryCriticism?: string;
+  primaryPraise?: string;
+}
+
+// Revision workspace interfaces
+export interface RevisionMode {
+  name: string;
+  description: string;
+  checksEnabled: string[];
+  aiPromptBias: string;
+  highlightPatterns: RegExp[];
+  quickActions: string[];
+}
+
+export interface Suggestion {
+  id: string;
+  type: 'spelling' | 'grammar' | 'style' | 'structure' | 'voice' | 'pacing';
+  severity: 'info' | 'warning' | 'error' | 'success';
+  startPosition: number;
+  endPosition: number;
+  originalText: string;
+  suggestedText: string;
+  rationale: string;
+  impactScore: number;
+}
+
+export interface EditIndicator {
+  color: string;
+  icon: string;
+  tooltip: string;
+  severity: 'info' | 'warning' | 'error' | 'success';
+}
+
+export interface DiffEditorProps {
+  showThreePaneDiff: boolean;
+  diffGranularity: 'character' | 'word' | 'sentence' | 'paragraph';
+  suggestionMode: 'aggressive' | 'balanced' | 'conservative' | 'voice_preserve';
+}
+
+export interface EditGroup {
+  id: string;
+  edits: Edit[];
+  groupType: 'batch_suggestion' | 'search_replace' | 'pattern_fix' | 'manual_selection';
+  description: string;
+  totalImpact: number;
+}
+
+export interface Pattern {
+  type: string;
+  text: string;
+  position: number;
+  severity: number;
+  autoFix?: { suggestion: string; replacement?: string };
+}
+
+export interface ReadingExperience {
+  persona: PersonaType;
+  reactions: SceneReaction[];
+  overallEngagement: number;
+  wouldFinish: boolean;
+  wouldRecommend: boolean;
+  keyIssues: string[];
+  highlights: string[];
+}
+
+export interface SceneReaction {
+  sceneId: string;
+  engagement: number;
+  emotion: string;
+  notes: string;
+  wouldStopReading?: boolean;
+  reason?: string;
+}
+
+export type PersonaType = 'genre_fan' | 'literary_critic' | 'casual_reader' | 'agent' | 'editor';
+
+export interface QuickFix {
+  id: string;
+  description: string;
+  impactScore: number;
+  effortScore: number;
+  autoApplicable: boolean;
+  targetScenes: string[];
+}
+
+export interface AutoFix {
+  id: string;
+  type: string;
+  description: string;
+  pattern: RegExp;
+  replacement: string | ((match: string) => string);
+  preserveCase: boolean;
+}
+
+export interface Issue {
+  id: string;
+  type: string;
+  severity: 'critical' | 'major' | 'minor';
+  description: string;
+  sceneIds: string[];
+  suggestedFix: string;
+  impactIfIgnored: string;
+}
