@@ -57,3 +57,13 @@ jest.mock('react-native-safe-area-context', () => ({
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'mock-uuid-1234'),
 }));
+
+// Mock react-native-mmkv
+jest.mock('react-native-mmkv', () => ({
+  MMKV: jest.fn().mockImplementation(() => ({
+    set: jest.fn(),
+    getString: jest.fn(() => 'mock-api-key'),
+    delete: jest.fn(),
+    clearAll: jest.fn(),
+  })),
+}));

@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 const DATABASE_NAME = 'narrative_surgeon.db';
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 
 class DatabaseService {
   private db: SQLite.SQLiteDatabase | null = null;
@@ -83,18 +83,98 @@ class DatabaseService {
       );
     `;
 
+    // Phase 2: LLM Analysis Tables
+    const createSceneAnalysisTable = `
+      CREATE TABLE IF NOT EXISTS scene_analysis (
+        id TEXT PRIMARY KEY,
+        scene_id TEXT NOT NULL UNIQUE,
+        summary TEXT,
+        primary_emotion TEXT,
+        secondary_emotion TEXT,
+        tension_level INTEGER,
+        pacing_score INTEGER,
+        function_tags TEXT,
+        voice_fingerprint TEXT,
+        conflict_present BOOLEAN,
+        character_introduced BOOLEAN,
+        analyzed_at INTEGER,
+        FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE
+      );
+    `;
+
+    const createOpeningAnalysisTable = `
+      CREATE TABLE IF NOT EXISTS opening_analysis (
+        id TEXT PRIMARY KEY,
+        manuscript_id TEXT NOT NULL UNIQUE,
+        hook_type TEXT,
+        hook_strength INTEGER,
+        voice_established BOOLEAN,
+        character_established BOOLEAN,
+        conflict_established BOOLEAN,
+        genre_appropriate BOOLEAN,
+        similar_to_comps TEXT,
+        agent_readiness_score INTEGER,
+        analysis_notes TEXT,
+        analyzed_at INTEGER,
+        FOREIGN KEY (manuscript_id) REFERENCES manuscripts(id) ON DELETE CASCADE
+      );
+    `;
+
+    const createCharacterVoicesTable = `
+      CREATE TABLE IF NOT EXISTS character_voices (
+        id TEXT PRIMARY KEY,
+        character_id TEXT NOT NULL,
+        scene_id TEXT NOT NULL,
+        dialogue_sample TEXT,
+        vocabulary_level INTEGER,
+        sentence_patterns TEXT,
+        unique_phrases TEXT,
+        emotional_register TEXT,
+        consistency_score INTEGER,
+        FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+        FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE
+      );
+    `;
+
+    const createPacingAnalysisTable = `
+      CREATE TABLE IF NOT EXISTS pacing_analysis (
+        id TEXT PRIMARY KEY,
+        manuscript_id TEXT NOT NULL,
+        act_number INTEGER,
+        start_scene_id TEXT,
+        end_scene_id TEXT,
+        beats_per_thousand INTEGER,
+        tension_arc TEXT,
+        comp_title_comparison TEXT,
+        suggestions TEXT,
+        FOREIGN KEY (manuscript_id) REFERENCES manuscripts(id) ON DELETE CASCADE
+      );
+    `;
+
     const createIndexes = [
       `CREATE INDEX IF NOT EXISTS idx_scenes_manuscript_id ON scenes(manuscript_id);`,
       `CREATE INDEX IF NOT EXISTS idx_scenes_index ON scenes(index_in_manuscript);`,
       `CREATE INDEX IF NOT EXISTS idx_characters_manuscript_id ON characters(manuscript_id);`,
       `CREATE INDEX IF NOT EXISTS idx_revision_notes_scene_id ON revision_notes(scene_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_scene_analysis_scene_id ON scene_analysis(scene_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_opening_analysis_manuscript_id ON opening_analysis(manuscript_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_character_voices_character_id ON character_voices(character_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_character_voices_scene_id ON character_voices(scene_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_pacing_analysis_manuscript_id ON pacing_analysis(manuscript_id);`,
     ];
 
     try {
+      // Phase 1 tables
       await this.db.execAsync(createManuscriptsTable);
       await this.db.execAsync(createScenesTable);
       await this.db.execAsync(createCharactersTable);
       await this.db.execAsync(createRevisionNotesTable);
+      
+      // Phase 2 tables
+      await this.db.execAsync(createSceneAnalysisTable);
+      await this.db.execAsync(createOpeningAnalysisTable);
+      await this.db.execAsync(createCharacterVoicesTable);
+      await this.db.execAsync(createPacingAnalysisTable);
       
       for (const indexQuery of createIndexes) {
         await this.db.execAsync(indexQuery);

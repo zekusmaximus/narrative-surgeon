@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useManuscriptStore } from '../store/manuscriptStore';
 import { Scene, RevisionNote } from '../types';
+import SceneRevisionAssistant from '../components/SceneRevisionAssistant';
 
 const EditorScreen: React.FC = () => {
   const {
@@ -35,6 +36,7 @@ const EditorScreen: React.FC = () => {
   const [isNotesModalVisible, setIsNotesModalVisible] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
   const [newNoteType, setNewNoteType] = useState<'plot_hole' | 'consistency' | 'pacing' | 'voice' | 'hook'>('plot_hole');
+  const [isRevisionAssistantVisible, setIsRevisionAssistantVisible] = useState(false);
 
   const currentScenes = activeManuscript ? scenes.get(activeManuscript.id) || [] : [];
   const currentScene = currentScenes.find(scene => scene.id === currentSceneId);
@@ -113,6 +115,12 @@ const EditorScreen: React.FC = () => {
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to update note');
     }
+  };
+
+  const handleRevisionSuggestion = (suggestion: string) => {
+    // Simple append for now - in a real implementation, you'd want more sophisticated text insertion
+    setSceneText(prev => prev + '\n\n' + suggestion);
+    setUnsavedChanges(true);
   };
 
   const formatWordCount = (count: number): string => {
@@ -239,6 +247,13 @@ const EditorScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
           
+          <TouchableOpacity
+            style={styles.assistantButton}
+            onPress={() => setIsRevisionAssistantVisible(true)}
+          >
+            <Text style={styles.assistantButtonText}>AI Assistant</Text>
+          </TouchableOpacity>
+          
           {sceneNotes.length > 0 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.notesList}>
               {sceneNotes.slice(0, 3).map((note) => (
@@ -348,6 +363,17 @@ const EditorScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Revision Assistant */}
+      {currentSceneId && (
+        <SceneRevisionAssistant
+          sceneId={currentSceneId}
+          sceneText={sceneText}
+          visible={isRevisionAssistantVisible}
+          onClose={() => setIsRevisionAssistantVisible(false)}
+          onRevisionSuggestion={handleRevisionSuggestion}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 };
@@ -467,10 +493,23 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     alignSelf: 'flex-start',
+    marginRight: 8,
   },
   notesButtonText: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  assistantButton: {
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignSelf: 'flex-start',
+  },
+  assistantButtonText: {
+    fontSize: 14,
+    color: 'white',
+    fontWeight: '500',
   },
   notesList: {
     marginTop: 8,

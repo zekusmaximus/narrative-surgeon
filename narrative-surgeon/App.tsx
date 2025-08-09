@@ -9,6 +9,7 @@ import { useManuscriptStore } from './src/store/manuscriptStore';
 import ManuscriptsScreen from './src/screens/ManuscriptsScreen';
 import ScenesScreen from './src/screens/ScenesScreen';
 import EditorScreen from './src/screens/EditorScreen';
+import AnalysisScreen from './src/screens/AnalysisScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
@@ -62,6 +63,14 @@ export default function App() {
             options={{
               title: 'Editor',
               tabBarLabel: 'Editor',
+            }}
+          />
+          <Tab.Screen
+            name="Analysis"
+            component={AnalysisScreen}
+            options={{
+              title: 'AI Analysis',
+              tabBarLabel: 'Analysis',
             }}
           />
           <Tab.Screen
