@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 const DATABASE_NAME = 'narrative_surgeon.db';
-const DATABASE_VERSION = 3;
+const DATABASE_VERSION = 4;
 
 class DatabaseService {
   private db: SQLite.SQLiteDatabase | null = null;
@@ -238,6 +238,146 @@ class DatabaseService {
       );
     `;
 
+    // Phase 4: Submission Materials Tables
+    const createQueryLettersTable = `
+      CREATE TABLE IF NOT EXISTS query_letters (
+        id TEXT PRIMARY KEY,
+        manuscript_id TEXT NOT NULL,
+        version_number INTEGER DEFAULT 1,
+        hook TEXT NOT NULL,
+        bio TEXT NOT NULL,
+        logline TEXT NOT NULL,
+        word_count INTEGER NOT NULL,
+        comp_titles TEXT NOT NULL,
+        personalization_template TEXT,
+        generated_text TEXT NOT NULL,
+        optimization_score INTEGER,
+        ab_test_group TEXT,
+        performance_metrics TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY (manuscript_id) REFERENCES manuscripts(id) ON DELETE CASCADE
+      );
+    `;
+
+    const createSynopsesTable = `
+      CREATE TABLE IF NOT EXISTS synopses (
+        id TEXT PRIMARY KEY,
+        manuscript_id TEXT NOT NULL,
+        length_type TEXT NOT NULL,
+        word_count INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        structural_beats TEXT,
+        character_arcs TEXT,
+        genre_elements TEXT,
+        optimization_score INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY (manuscript_id) REFERENCES manuscripts(id) ON DELETE CASCADE
+      );
+    `;
+
+    const createSamplePagesTable = `
+      CREATE TABLE IF NOT EXISTS sample_pages (
+        id TEXT PRIMARY KEY,
+        manuscript_id TEXT NOT NULL,
+        page_count INTEGER NOT NULL,
+        format_type TEXT NOT NULL,
+        content TEXT NOT NULL,
+        font_settings TEXT,
+        margin_settings TEXT,
+        header_settings TEXT,
+        industry_standard TEXT,
+        file_path TEXT,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (manuscript_id) REFERENCES manuscripts(id) ON DELETE CASCADE
+      );
+    `;
+
+    const createAgentDatabaseTable = `
+      CREATE TABLE IF NOT EXISTS agent_database (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        agency TEXT,
+        genres TEXT,
+        client_list TEXT,
+        submission_guidelines TEXT,
+        response_time_days INTEGER,
+        acceptance_rate REAL,
+        client_success_stories TEXT,
+        social_media_handles TEXT,
+        interview_quotes TEXT,
+        manuscript_wishlist TEXT,
+        recent_deals TEXT,
+        query_preferences TEXT,
+        red_flags TEXT,
+        updated_at INTEGER NOT NULL
+      );
+    `;
+
+    const createSubmissionTrackingTable = `
+      CREATE TABLE IF NOT EXISTS submission_tracking (
+        id TEXT PRIMARY KEY,
+        manuscript_id TEXT NOT NULL,
+        agent_id TEXT NOT NULL,
+        query_letter_id TEXT,
+        synopsis_id TEXT,
+        sample_pages_id TEXT,
+        submission_date INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        response_date INTEGER,
+        response_type TEXT,
+        personalization_notes TEXT,
+        follow_up_date INTEGER,
+        notes TEXT,
+        tags TEXT,
+        FOREIGN KEY (manuscript_id) REFERENCES manuscripts(id) ON DELETE CASCADE,
+        FOREIGN KEY (agent_id) REFERENCES agent_database(id),
+        FOREIGN KEY (query_letter_id) REFERENCES query_letters(id),
+        FOREIGN KEY (synopsis_id) REFERENCES synopses(id),
+        FOREIGN KEY (sample_pages_id) REFERENCES sample_pages(id)
+      );
+    `;
+
+    const createSubmissionAnalyticsTable = `
+      CREATE TABLE IF NOT EXISTS submission_analytics (
+        id TEXT PRIMARY KEY,
+        manuscript_id TEXT NOT NULL,
+        time_period TEXT,
+        submissions_sent INTEGER DEFAULT 0,
+        responses_received INTEGER DEFAULT 0,
+        requests_for_more INTEGER DEFAULT 0,
+        rejections INTEGER DEFAULT 0,
+        no_responses INTEGER DEFAULT 0,
+        response_rate REAL,
+        request_rate REAL,
+        avg_response_time REAL,
+        top_rejection_reasons TEXT,
+        optimization_suggestions TEXT,
+        calculated_at INTEGER NOT NULL,
+        FOREIGN KEY (manuscript_id) REFERENCES manuscripts(id) ON DELETE CASCADE
+      );
+    `;
+
+    const createAgentMatchingTable = `
+      CREATE TABLE IF NOT EXISTS agent_matching (
+        id TEXT PRIMARY KEY,
+        manuscript_id TEXT NOT NULL,
+        agent_id TEXT NOT NULL,
+        compatibility_score INTEGER NOT NULL,
+        genre_match_score INTEGER,
+        client_success_score INTEGER,
+        submission_preferences_score INTEGER,
+        market_position_score INTEGER,
+        match_reasoning TEXT,
+        priority_rank INTEGER,
+        contacted BOOLEAN DEFAULT 0,
+        calculated_at INTEGER NOT NULL,
+        FOREIGN KEY (manuscript_id) REFERENCES manuscripts(id) ON DELETE CASCADE,
+        FOREIGN KEY (agent_id) REFERENCES agent_database(id)
+      );
+    `;
+
     const createIndexes = [
       `CREATE INDEX IF NOT EXISTS idx_scenes_manuscript_id ON scenes(manuscript_id);`,
       `CREATE INDEX IF NOT EXISTS idx_scenes_index ON scenes(index_in_manuscript);`,
@@ -258,6 +398,23 @@ class DatabaseService {
       `CREATE INDEX IF NOT EXISTS idx_edit_patterns_type ON edit_patterns(pattern_type);`,
       `CREATE INDEX IF NOT EXISTS idx_comp_analysis_manuscript_id ON comp_analysis(manuscript_id);`,
       `CREATE INDEX IF NOT EXISTS idx_beta_reader_personas_manuscript_id ON beta_reader_personas(manuscript_id);`,
+      // Phase 4 indexes
+      `CREATE INDEX IF NOT EXISTS idx_query_letters_manuscript_id ON query_letters(manuscript_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_query_letters_version ON query_letters(version_number);`,
+      `CREATE INDEX IF NOT EXISTS idx_synopses_manuscript_id ON synopses(manuscript_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_synopses_length_type ON synopses(length_type);`,
+      `CREATE INDEX IF NOT EXISTS idx_sample_pages_manuscript_id ON sample_pages(manuscript_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_agent_database_genres ON agent_database(genres);`,
+      `CREATE INDEX IF NOT EXISTS idx_agent_database_updated_at ON agent_database(updated_at);`,
+      `CREATE INDEX IF NOT EXISTS idx_submission_tracking_manuscript_id ON submission_tracking(manuscript_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_submission_tracking_agent_id ON submission_tracking(agent_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_submission_tracking_status ON submission_tracking(status);`,
+      `CREATE INDEX IF NOT EXISTS idx_submission_tracking_date ON submission_tracking(submission_date);`,
+      `CREATE INDEX IF NOT EXISTS idx_submission_analytics_manuscript_id ON submission_analytics(manuscript_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_submission_analytics_period ON submission_analytics(time_period);`,
+      `CREATE INDEX IF NOT EXISTS idx_agent_matching_manuscript_id ON agent_matching(manuscript_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_agent_matching_agent_id ON agent_matching(agent_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_agent_matching_score ON agent_matching(compatibility_score);`,
     ];
 
     try {
@@ -279,6 +436,15 @@ class DatabaseService {
       await this.db.execAsync(createEditPatternsTable);
       await this.db.execAsync(createCompAnalysisTable);
       await this.db.execAsync(createBetaReaderPersonasTable);
+      
+      // Phase 4 tables
+      await this.db.execAsync(createQueryLettersTable);
+      await this.db.execAsync(createSynopsesTable);
+      await this.db.execAsync(createSamplePagesTable);
+      await this.db.execAsync(createAgentDatabaseTable);
+      await this.db.execAsync(createSubmissionTrackingTable);
+      await this.db.execAsync(createSubmissionAnalyticsTable);
+      await this.db.execAsync(createAgentMatchingTable);
       
       for (const indexQuery of createIndexes) {
         await this.db.execAsync(indexQuery);

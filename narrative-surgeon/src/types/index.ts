@@ -411,3 +411,222 @@ export interface Issue {
   suggestedFix: string;
   impactIfIgnored: string;
 }
+
+// Phase 4: Agent Submission Types
+export interface QueryLetter {
+  id: string;
+  manuscriptId: string;
+  versionNumber: number;
+  hook: string;
+  bio: string;
+  logline: string;
+  wordCount: number;
+  compTitles: string[];
+  personalizationTemplate?: string;
+  generatedText: string;
+  optimizationScore?: number;
+  abTestGroup?: string;
+  performanceMetrics?: QueryLetterMetrics;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface QueryLetterMetrics {
+  openRate?: number;
+  responseRate?: number;
+  requestRate?: number;
+  avgResponseTime?: number;
+  rejectionReasons?: string[];
+}
+
+export interface Synopsis {
+  id: string;
+  manuscriptId: string;
+  lengthType: 'one_page' | 'two_page' | 'chapter_by_chapter';
+  wordCount: number;
+  content: string;
+  structuralBeats: string[];
+  characterArcs: Record<string, string>;
+  genreElements: string[];
+  optimizationScore?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SamplePages {
+  id: string;
+  manuscriptId: string;
+  pageCount: number;
+  formatType: 'industry_standard' | 'agent_specific' | 'contest';
+  content: string;
+  fontSettings: FontSettings;
+  marginSettings: MarginSettings;
+  headerSettings: HeaderSettings;
+  industryStandard: string;
+  filePath?: string;
+  createdAt: number;
+}
+
+export interface FontSettings {
+  family: string;
+  size: number;
+  lineSpacing: number;
+}
+
+export interface MarginSettings {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+  units: 'inches' | 'cm';
+}
+
+export interface HeaderSettings {
+  includeTitle: boolean;
+  includeAuthor: boolean;
+  includePageNumbers: boolean;
+  customText?: string;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  agency?: string;
+  genres: string[];
+  clientList: string[];
+  submissionGuidelines: SubmissionGuidelines;
+  responseTimeDays?: number;
+  acceptanceRate?: number;
+  clientSuccessStories: string[];
+  socialMediaHandles: Record<string, string>;
+  interviewQuotes: string[];
+  manuscriptWishlist: string[];
+  recentDeals: Deal[];
+  queryPreferences: QueryPreferences;
+  redFlags: string[];
+  updatedAt: number;
+}
+
+export interface SubmissionGuidelines {
+  queryFormat: 'email' | 'form' | 'postal';
+  synopsisRequired: boolean;
+  samplePagesCount: number;
+  samplePagesFormat: 'first_pages' | 'first_chapter' | 'first_50';
+  attachmentsAllowed: boolean;
+  responsePolicy: string;
+  exclusiveSubmissions: boolean;
+}
+
+export interface QueryPreferences {
+  personalizationRequired: boolean;
+  genreInSubject: boolean;
+  compTitlesRequired: boolean;
+  wordCountRequired: boolean;
+  bioRequired: boolean;
+}
+
+export interface Deal {
+  title: string;
+  author: string;
+  publisher: string;
+  year: number;
+  genre: string;
+}
+
+export interface SubmissionRecord {
+  id: string;
+  manuscriptId: string;
+  agentId: string;
+  queryLetterId?: string;
+  synopsisId?: string;
+  samplePagesId?: string;
+  submissionDate: number;
+  status: SubmissionStatus;
+  responseDate?: number;
+  responseType?: ResponseType;
+  personalizationNotes?: string;
+  followUpDate?: number;
+  notes?: string;
+  tags: string[];
+}
+
+export type SubmissionStatus = 
+  | 'queued'
+  | 'sent'
+  | 'acknowledged'
+  | 'under_review'
+  | 'requested_full'
+  | 'rejected'
+  | 'no_response'
+  | 'withdrawn';
+
+export type ResponseType = 
+  | 'form_rejection'
+  | 'personalized_rejection'
+  | 'request_for_full'
+  | 'request_for_partial'
+  | 'offer_of_representation'
+  | 'referral';
+
+export interface SubmissionAnalytics {
+  id: string;
+  manuscriptId: string;
+  timePeriod: string;
+  submissionsSent: number;
+  responsesReceived: number;
+  requestsForMore: number;
+  rejections: number;
+  noResponses: number;
+  responseRate: number;
+  requestRate: number;
+  avgResponseTime: number;
+  topRejectionReasons: string[];
+  optimizationSuggestions: string[];
+  calculatedAt: number;
+}
+
+export interface AgentMatch {
+  id: string;
+  manuscriptId: string;
+  agentId: string;
+  compatibilityScore: number;
+  genreMatchScore?: number;
+  clientSuccessScore?: number;
+  submissionPreferencesScore?: number;
+  marketPositionScore?: number;
+  matchReasoning: string;
+  priorityRank: number;
+  contacted: boolean;
+  calculatedAt: number;
+}
+
+export interface AgentResearch {
+  recentInterviews: string[];
+  manuscriptWishes: string[];
+  recentSales: Deal[];
+  clientUpdates: string[];
+  socialMediaActivity: string[];
+  conferenceAppearances: string[];
+  lastUpdated: number;
+}
+
+export interface SubmissionPipeline {
+  manuscripts: SubmissionManuscript[];
+  totalAgentsResearched: number;
+  totalSubmissionsSent: number;
+  totalResponsesReceived: number;
+  averageResponseTime: number;
+  successRate: number;
+}
+
+export interface SubmissionManuscript {
+  manuscriptId: string;
+  title: string;
+  genre: string;
+  wordCount: number;
+  agentReadinessScore: number;
+  submissionsActive: number;
+  submissionsWaiting: number;
+  requestsReceived: number;
+  nextSubmissionDate?: number;
+}
