@@ -12,7 +12,8 @@
       "Bash(npm run test:*)",
       "Bash(npm run:*)",
       "Bash(node:*)",
-      "Bash(npm start:*)"
+      "Bash(npm start:*)",
+      "Bash(npm create:*)"
     ],
     "deny": []
   }
