@@ -18,11 +18,39 @@ import {
   PacingProfile
 } from '../types';
 
-// Secure storage for API keys
-const storage = new MMKV({
-  id: 'narrative-surgeon-secure',
-  encryptionKey: 'narrative-surgeon-encryption-key'
-});
+// Enhanced secure storage for API keys with optional dynamic encryption
+const getOrCreateEncryptionKey = async (): Promise<string> => {
+  try {
+    // Try to use Expo SecureStore if available
+    const SecureStore = require('expo-secure-store');
+    const Crypto = require('expo-crypto');
+    
+    let key = await SecureStore.getItemAsync('encryption_key');
+    if (!key) {
+      key = Crypto.randomUUID();
+      await SecureStore.setItemAsync('encryption_key', key);
+    }
+    return key;
+  } catch (error) {
+    // Fallback to static key if Expo modules not available
+    console.log('Using fallback encryption (install expo-secure-store for enhanced security)');
+    return 'narrative-surgeon-encryption-key-v2';
+  }
+};
+
+// Create storage instance with dynamic encryption key
+let secureStorage: MMKV | null = null;
+
+const getSecureStorage = async (): Promise<MMKV> => {
+  if (!secureStorage) {
+    const encryptionKey = await getOrCreateEncryptionKey();
+    secureStorage = new MMKV({
+      id: 'narrative-surgeon-secure',
+      encryptionKey
+    });
+  }
+  return secureStorage;
+};
 
 export interface LLMProvider {
   // Core analysis
@@ -47,27 +75,57 @@ export interface LLMProvider {
 export class ChunkedLLMProvider implements LLMProvider {
   private readonly maxTokens = 2000;
   private readonly overlapTokens = 200;
-  private readonly apiKey: string | undefined;
+  private apiKey: string | undefined;
   private readonly baseURL: string;
 
   constructor(apiKey?: string, baseURL: string = 'https://api.openai.com/v1') {
-    this.apiKey = apiKey || storage.getString('openai_api_key');
     this.baseURL = baseURL;
+    this.initializeApiKey(apiKey);
   }
 
-  setApiKey(key: string): void {
-    storage.set('openai_api_key', key);
+  private async initializeApiKey(providedKey?: string): Promise<void> {
+    if (providedKey) {
+      this.apiKey = providedKey;
+      return;
+    }
+
+    try {
+      const storage = await getSecureStorage();
+      this.apiKey = storage.getString('openai_api_key');
+    } catch (error) {
+      console.error('Error loading API key:', error);
+      this.apiKey = undefined;
+    }
+  }
+
+  async setApiKey(key: string): Promise<void> {
+    try {
+      const storage = await getSecureStorage();
+      storage.set('openai_api_key', key);
+      this.apiKey = key;
+    } catch (error) {
+      console.error('Error saving API key:', error);
+      throw new Error('Failed to save API key securely');
+    }
+  }
+
+  async getApiKey(): Promise<string | undefined> {
+    if (!this.apiKey) {
+      await this.initializeApiKey();
+    }
+    return this.apiKey;
   }
 
   async callLLM(systemPrompt: string, userPrompt: string, maxTokens: number = 1000): Promise<any> {
-    if (!this.apiKey) {
-      throw new Error('OpenAI API key not configured');
+    const apiKey = await this.getApiKey();
+    if (!apiKey) {
+      throw new Error('OpenAI API key not configured. Please set your API key in App Settings.');
     }
 
     const response = await fetch(`${this.baseURL}/chat/completions`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
