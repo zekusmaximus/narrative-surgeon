@@ -107,7 +107,12 @@ const DiffEditor: React.FC<DiffEditorComponentProps> = ({
         affectsCharacter: suggestion.type === 'voice',
         affectsPacing: suggestion.type === 'pacing',
         createdAt: Date.now(),
-        appliedAt: Date.now()
+        appliedAt: Date.now(),
+        // Add properties for the simpler Edit interface for compatibility
+        type: 'replace' as const,
+        start: suggestion.startPosition,
+        text: suggestion.suggestedText,
+        reason: suggestion.rationale
       };
       onEditTracked(edit);
     }
@@ -443,12 +448,13 @@ function generateSuggestedText(): string {
 }
 
 function getIndicatorForSuggestion(suggestion: Suggestion): EditIndicator {
-  const typeMap = {
+  const typeMap: Record<string, string> = {
     'style': 'filter_word',
     'voice': 'voice_drift',
     'pacing': 'pace_slow',
     'structure': 'hook_weak',
-    'grammar': 'weak_verb'
+    'grammar': 'weak_verb',
+    'spelling': 'filter_word'
   };
 
   const indicatorType = typeMap[suggestion.type] || 'filter_word';

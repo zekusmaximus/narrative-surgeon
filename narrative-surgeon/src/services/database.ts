@@ -24,6 +24,7 @@ class DatabaseService {
       CREATE TABLE IF NOT EXISTS manuscripts (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
+        author TEXT,
         genre TEXT,
         target_audience TEXT,
         comp_titles TEXT,

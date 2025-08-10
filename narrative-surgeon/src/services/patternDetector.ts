@@ -23,7 +23,7 @@ export class PatternDetector {
         pattern: /\bvery\s+(\w+)/gi,
         replacement: (match: string) => {
           const word = match.replace(/very\s+/i, '');
-          const strongerWords = {
+          const strongerWords: Record<string, string> = {
             'good': 'excellent',
             'bad': 'terrible',
             'big': 'enormous',
@@ -81,7 +81,7 @@ export class PatternDetector {
         description: 'Remove redundant words from common phrases',
         pattern: /\b(advance forward|past history|future plans|end result|final outcome)\b/gi,
         replacement: (match: string) => {
-          const fixes = {
+          const fixes: Record<string, string> = {
             'advance forward': 'advance',
             'past history': 'history', 
             'future plans': 'plans',
@@ -123,7 +123,7 @@ export class PatternDetector {
   private calculateSeverity(patternType: string, frequency: number, textLength: number): number {
     const density = frequency / (textLength / 1000); // Per 1000 chars
     
-    const severityMap = {
+    const severityMap: Record<string, number> = {
       'filter_words': Math.min(density * 15, 100),
       'passive_voice': Math.min(density * 20, 100), 
       'telling_phrases': Math.min(density * 25, 100),
@@ -273,7 +273,7 @@ export class PatternDetector {
 
   private getSynonyms(word: string): string[] {
     // Simple synonym dictionary - in production, this would use a thesaurus API
-    const synonyms = {
+    const synonyms: Record<string, string[]> = {
       'said': ['stated', 'declared', 'mentioned', 'replied', 'responded'],
       'good': ['excellent', 'outstanding', 'superb', 'fine', 'great'],
       'bad': ['terrible', 'awful', 'horrible', 'poor', 'dreadful'],

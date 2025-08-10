@@ -256,7 +256,7 @@ Provide insights as JSON:
           imported++;
         }
       } catch (error) {
-        errors.push(`Error processing ${agentData.name}: ${error.message}`);
+        errors.push(`Error processing ${agentData.name}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -274,7 +274,7 @@ Provide insights as JSON:
     if (agentGenres.includes(manuscriptGenre)) return 100;
     
     // Partial matches for related genres
-    const genreMap = {
+    const genreMap: Record<string, string[]> = {
       'fantasy': ['scifi', 'paranormal', 'urban fantasy'],
       'scifi': ['fantasy', 'speculative'],
       'thriller': ['mystery', 'suspense', 'crime'],
@@ -284,7 +284,7 @@ Provide insights as JSON:
     };
     
     const relatedGenres = genreMap[manuscriptGenre] || [];
-    if (relatedGenres.some(rg => agentGenres.some(ag => ag.includes(rg)))) return 75;
+    if (relatedGenres.some((rg: string) => agentGenres.some((ag: string) => ag.includes(rg)))) return 75;
     
     // General fiction match
     if (agentGenres.includes('fiction')) return 60;
@@ -477,7 +477,7 @@ Provide insights as JSON:
     };
   }
 
-  private async getAgent(agentId: string): Promise<Agent | null> {
+  async getAgent(agentId: string): Promise<Agent | null> {
     const query = `SELECT * FROM agent_database WHERE id = ?`;
     const result = await databaseService.getFirst(query, [agentId]);
     return result ? this.mapAgentFromDatabase(result) : null;

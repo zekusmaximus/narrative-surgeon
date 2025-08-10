@@ -363,7 +363,7 @@ Return as JSON:
     let score = 70;
     
     // Length appropriateness
-    const targetRanges = {
+    const targetRanges: Record<string, { min: number; max: number }> = {
       'one_page': { min: 250, max: 500 },
       'two_page': { min: 500, max: 1000 },
       'chapter_by_chapter': { min: 1000, max: 3000 }
@@ -382,11 +382,11 @@ Return as JSON:
     return Math.max(0, Math.min(100, score));
   }
 
-  private generateFallbackSynopsis(manuscript: Manuscript, lengthType: string): string {
+  private generateFallbackSynopsis(manuscript: Manuscript, lengthType: 'one_page' | 'two_page' | 'chapter_by_chapter'): string {
     return `[${manuscript.title}] follows [protagonist] as they face [central conflict]. When [inciting incident] occurs, [protagonist] must [quest/goal] while dealing with [obstacles]. The story explores themes of [themes] and culminates when [protagonist] [resolution].`;
   }
 
-  private generateFallbackSynopsisObject(manuscript: Manuscript, lengthType: string): Synopsis {
+  private generateFallbackSynopsisObject(manuscript: Manuscript, lengthType: 'one_page' | 'two_page' | 'chapter_by_chapter'): Synopsis {
     const content = this.generateFallbackSynopsis(manuscript, lengthType);
     
     return {

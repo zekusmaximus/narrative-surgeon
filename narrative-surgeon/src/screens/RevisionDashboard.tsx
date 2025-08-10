@@ -138,7 +138,7 @@ const RevisionDashboard: React.FC = () => {
       if (!agentPersona.wouldRecommend) score -= 20;
       
       // Use engagement curve to assess opening strength
-      const averageEngagement = agentPersona.engagementCurve?.reduce((a, b) => a + b, 0) / 
+      const averageEngagement = (agentPersona.engagementCurve?.reduce((a, b) => a + b, 0) || 0) / 
         (agentPersona.engagementCurve?.length || 1);
       score = (score + averageEngagement) / 2;
     }
@@ -169,7 +169,7 @@ const RevisionDashboard: React.FC = () => {
     // Focus on most severe pattern type
     const topPattern = patterns.sort((a, b) => b.severity - a.severity)[0];
     if (topPattern) {
-      const focusMap = {
+      const focusMap: Record<string, string> = {
         'filter_words': 'Line Editing',
         'passive_voice': 'Line Editing',
         'dialogue_issues': 'Dialogue Enhancement',
@@ -177,7 +177,7 @@ const RevisionDashboard: React.FC = () => {
         'pacing_issues': 'Tension Calibration'
       };
 
-      const focusName = focusMap[topPattern.patternType] || 'Line Editing';
+      const focusName = focusMap[topPattern.patternType || ''] || 'Line Editing';
       const mode = modes.find(m => m.name.includes(focusName)) || modes[0];
       
       return {
@@ -348,7 +348,7 @@ const RevisionDashboard: React.FC = () => {
       </View>
 
       {/* Critical Issues */}
-      {metrics?.criticalIssues.length > 0 && (
+      {metrics?.criticalIssues && metrics.criticalIssues.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Critical Issues</Text>
           {metrics.criticalIssues.slice(0, 3).map(issue => (
@@ -378,7 +378,7 @@ const RevisionDashboard: React.FC = () => {
       </View>
 
       {/* Quick Wins */}
-      {metrics?.quickWins.length > 0 && (
+      {metrics?.quickWins && metrics.quickWins.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Wins</Text>
           {metrics.quickWins.slice(0, 3).map(quickWin => (

@@ -174,12 +174,12 @@ Respond in JSON format:
 
   const generateMockCompOpening = (compTitle: string): string => {
     // Mock openings for common comp titles - in production this would come from a database
-    const mockOpenings = {
+    const mockOpenings: Record<string, string> = {
       'Gone Girl': 'When I think of my wife, I always think of her head. The shape of it, to begin with. The very first time I saw her, it was the back of the head I saw, and there was something lovely about it.',
       'The Girl with the Dragon Tattoo': 'It happened every year, was almost a ritual. And this was his eighty-second birthday. When, as usual, the flower was delivered, he took off the wrapping paper and then picked up the telephone to call Detective Superintendent Morell.',
       'Big Little Lies': 'The beautiful Celeste White Apparently had it all: the devoted husband, the successful career, the stunning house overlooking the ocean. But Celeste knew, as women often do, that beneath the perfect surface, everything was about to fall apart.',
       'The Seven Husbands of Evelyn Hugo': 'Evelyn Hugo was reclusive for the last fifteen years of her life. So it came as a shock when she called me at my cramped desk at Vivant magazine and asked me to come see her.',
-      'Where the Crawdads Sing': 'The morning burned so August-hot, the marsh's moist breath hung the oaks and pines with fog. The palmetto patches stood unusually quiet except for the low, slow flap of the heron's wings lifting from the lagoon.'
+      'Where the Crawdads Sing': 'The morning burned so August-hot, the marsh\'s moist breath hung the oaks and pines with fog. The palmetto patches stood unusually quiet except for the low, slow flap of the heron\'s wings lifting from the lagoon.'
     };
     
     return mockOpenings[compTitle] || 'The story began on a day like any other, but everything was about to change forever.';

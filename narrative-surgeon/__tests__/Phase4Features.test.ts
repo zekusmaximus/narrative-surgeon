@@ -178,7 +178,7 @@ describe('Phase 4: Agent Submission Features', () => {
       expect(optimized.id).not.toBe(originalQuery.id);
       expect(optimized.versionNumber).toBe(originalQuery.versionNumber + 1);
       expect(optimized.manuscriptId).toBe(originalQuery.manuscriptId);
-      expect(optimized.optimizationScore).toBeGreaterThanOrEqual(originalQuery.optimizationScore);
+      expect(optimized.optimizationScore).toBeGreaterThanOrEqual(originalQuery.optimizationScore || 0);
     });
 
     it('should personalize query letter for specific agent', async () => {
@@ -272,7 +272,7 @@ describe('Phase 4: Agent Submission Features', () => {
       expect(optimized.id).not.toBe(originalSynopsis.id);
       expect(optimized.manuscriptId).toBe(originalSynopsis.manuscriptId);
       expect(optimized.lengthType).toBe(originalSynopsis.lengthType);
-      expect(optimized.optimizationScore).toBeGreaterThanOrEqual(originalSynopsis.optimizationScore);
+      expect(optimized.optimizationScore).toBeGreaterThanOrEqual(originalSynopsis.optimizationScore || 0);
     });
 
     it('should analyze synopsis effectiveness', async () => {
@@ -647,7 +647,7 @@ describe('Phase 4: Agent Submission Features', () => {
       expect(standardSubmission.queryLetter.mimeType).toBeDefined();
       expect(standardSubmission.synopsis.mimeType).toBeDefined();
       expect(standardSubmission.samplePages.mimeType).toBeDefined();
-      expect(standardSubmission.coverLetter.mimeType).toBe('text/plain');
+      expect(standardSubmission.coverLetter?.mimeType).toBe('text/plain');
     });
   });
 

@@ -80,7 +80,7 @@ export class RevisionModeService {
   }
 
   getModeByType(sessionType: string): RevisionMode {
-    const modeMap = {
+    const modeMap: Record<string, RevisionMode> = {
       'developmental': revisionModes.developmental,
       'line': revisionModes.line_editing,
       'copy': revisionModes.copy_editing,

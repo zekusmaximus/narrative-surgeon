@@ -1,6 +1,7 @@
 export interface Manuscript {
   id: string;
   title: string;
+  author?: string;
   genre?: 'literary' | 'thriller' | 'romance' | 'mystery' | 'fantasy' | 'scifi' | 'historical' | 'other';
   targetAudience?: 'adult' | 'ya' | 'mg';
   compTitles?: string[];

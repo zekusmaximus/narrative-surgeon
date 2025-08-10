@@ -45,10 +45,16 @@ const ManuscriptsScreen: React.FC = () => {
       const importedData = await importer.importFromFile(options);
       importer.validateImport(importedData);
 
+      const metadata: Partial<Manuscript> = {
+        ...importedData.metadata,
+        genre: importedData.metadata?.genre as Manuscript['genre'],
+        targetAudience: importedData.metadata?.targetAudience as Manuscript['targetAudience']
+      };
+
       const manuscript = await createManuscript(
         importedData.title,
         importedData.text,
-        importedData.metadata
+        metadata
       );
 
       setIsImportModalVisible(false);

@@ -53,7 +53,7 @@ export class SuggestionEngine {
       return {
         previousScenes,
         nextScenes,
-        sceneAnalysis,
+        sceneAnalysis: sceneAnalysis || undefined,
         characterArcs: [], // TODO: Implement character arc analysis
         plotThreads: [], // TODO: Implement plot thread analysis
         compAnalysis,
@@ -287,7 +287,7 @@ Limit to 5 most impactful suggestions.`;
   }
 
   private getReaderImpactScore(personaType: string): number {
-    const scores = {
+    const scores: Record<string, number> = {
       'agent': 90,
       'editor': 85,
       'genre_fan': 70,
@@ -365,7 +365,7 @@ Limit to 5 most impactful suggestions.`;
   }
 
   private isPatternRelevantToMode(pattern: Pattern, mode: RevisionMode): boolean {
-    const relevanceMap = {
+    const relevanceMap: Record<string, string[]> = {
       'filter_words': ['style', 'voice_clarity', 'line_editing'],
       'passive_voice': ['style', 'voice', 'line_editing'], 
       'telling_phrases': ['voice', 'style', 'show_vs_tell'],
@@ -376,11 +376,11 @@ Limit to 5 most impactful suggestions.`;
     };
 
     const relevantChecks = relevanceMap[pattern.type] || [];
-    return relevantChecks.some(check => mode.checksEnabled.includes(check));
+    return relevantChecks.some((check: string) => mode.checksEnabled.includes(check));
   }
 
   private mapPatternTypeToSuggestionType(patternType: string): Suggestion['type'] {
-    const mapping = {
+    const mapping: Record<string, string> = {
       'filter_words': 'style',
       'passive_voice': 'style',
       'telling_phrases': 'voice',

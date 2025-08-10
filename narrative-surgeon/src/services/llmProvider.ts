@@ -59,7 +59,7 @@ export class ChunkedLLMProvider implements LLMProvider {
     storage.set('openai_api_key', key);
   }
 
-  private async callLLM(systemPrompt: string, userPrompt: string, maxTokens: number = 1000): Promise<any> {
+  async callLLM(systemPrompt: string, userPrompt: string, maxTokens: number = 1000): Promise<any> {
     if (!this.apiKey) {
       throw new Error('OpenAI API key not configured');
     }
