@@ -1,19 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
+import { TextStyle } from '@tiptap/extension-text-style';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Separator } from './ui/separator';
+import { ExportDialog } from './ExportDialog';
+import { DocumentOutline } from './DocumentOutline';
+import { WritingStats } from './WritingStats';
+import { TrackChangesSimple } from './extensions/TrackChangesSimple';
 import { 
   SaveIcon, 
   UndoIcon, 
   RedoIcon, 
   BoldIcon, 
   ItalicIcon,
+  DownloadIcon,
+  SearchIcon,
+  MessageSquareIcon,
+  EditIcon,
+  EyeIcon,
   TypeIcon,
-  FileTextIcon,
-  TimerIcon
+  ClockIcon,
+  CheckIcon,
+  XIcon
 } from 'lucide-react';
 import { useManuscriptStore } from '../store/manuscriptStore';
 import type { Manuscript, Scene } from '../types';
@@ -23,19 +35,61 @@ interface ManuscriptEditorProps {
   onBack: () => void;
 }
 
+interface EditorState {
+  isTrackChangesActive: boolean;
+  isFindReplaceOpen: boolean;
+  isTypewriterMode: boolean;
+  isFocusMode: boolean;
+  searchTerm: string;
+  replaceTerm: string;
+}
+
 export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [currentScene, setCurrentScene] = useState<Scene | null>(null);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [editorState, setEditorState] = useState<EditorState>({
+    isTrackChangesActive: false,
+    isFindReplaceOpen: false,
+    isTypewriterMode: false,
+    isFocusMode: false,
+    searchTerm: '',
+    replaceTerm: '',
+  });
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { 
     scenes, 
     loadManuscriptData, 
     updateScene, 
-    setActiveManuscript 
+    setActiveManuscript,
+    reorderScenes,
+    createScene,
+    deleteScene,
+    renameScene
   } = useManuscriptStore();
 
   const manuscriptScenes = scenes.get(manuscript.id) || [];
+
+  // Auto-save function  
+  const autoSave = useCallback(async (editorInstance: any) => {
+    if (!editorInstance || !currentScene || isSaving) return;
+    
+    const content = editorInstance.getHTML();
+    const wordCount = editorInstance.storage.characterCount.words() || 0;
+    
+    try {
+      await updateScene(currentScene.id, {
+        rawText: content,
+        wordCount,
+        updatedAt: Date.now(),
+      });
+      setLastSaved(new Date());
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    }
+  }, [currentScene, isSaving, updateScene]);
 
   const editor = useEditor({
     extensions: [
@@ -44,6 +98,7 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
           levels: [1, 2, 3],
         },
       }),
+      TextStyle,
       Placeholder.configure({
         placeholder: 'Start writing your story here...',
         showOnlyWhenEditable: true,
@@ -52,6 +107,9 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
       CharacterCount.configure({
         limit: null,
       }),
+      TrackChangesSimple.configure({
+        enabled: editorState.isTrackChangesActive,
+      }),
     ],
     content: currentScene?.rawText || '<p>Loading...</p>',
     editorProps: {
@@ -59,15 +117,25 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
         class: 'manuscript-editor prose prose-lg max-w-none focus:outline-none min-h-[500px] px-6 py-4',
       },
     },
-    onUpdate: ({ editor }) => {
-      // Auto-save logic would go here
-      // For now, we'll implement manual save
+    onUpdate: ({ editor: editorInstance }) => {
+      // Set up auto-save timer (30 seconds)
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      autoSaveTimeoutRef.current = setTimeout(() => autoSave(editorInstance), 30000);
     },
   });
 
   useEffect(() => {
     setActiveManuscript(manuscript);
     loadManuscriptData(manuscript.id);
+    
+    // Cleanup auto-save timeout on unmount
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
   }, [manuscript, setActiveManuscript, loadManuscriptData]);
 
   useEffect(() => {
@@ -110,11 +178,91 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
     }
   };
 
+  const handleScenesReorder = async (newOrder: string[]) => {
+    try {
+      await reorderScenes(manuscript.id, newOrder);
+      // The store will update the local state
+    } catch (error) {
+      console.error('Failed to reorder scenes:', error);
+    }
+  };
+
+  const handleSceneCreate = async (afterSceneId?: string) => {
+    try {
+      const newScene = await createScene(manuscript.id, afterSceneId);
+      setCurrentScene(newScene);
+      if (editor) {
+        editor.commands.setContent(newScene.rawText || '<p>Start writing here...</p>');
+      }
+    } catch (error) {
+      console.error('Failed to create scene:', error);
+    }
+  };
+
+  const handleSceneDelete = async (sceneId: string) => {
+    try {
+      await deleteScene(sceneId);
+      // If we deleted the current scene, select the first available scene
+      if (currentScene?.id === sceneId) {
+        const remainingScenes = manuscriptScenes.filter(s => s.id !== sceneId);
+        if (remainingScenes.length > 0) {
+          handleSceneSelect(remainingScenes[0]);
+        } else {
+          setCurrentScene(null);
+          if (editor) {
+            editor.commands.setContent('<p>No scenes available. Create a new scene to start writing.</p>');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to delete scene:', error);
+    }
+  };
+
+  const handleSceneRename = async (sceneId: string, newTitle: string) => {
+    try {
+      await renameScene(sceneId, newTitle);
+      // The store will update the local state
+    } catch (error) {
+      console.error('Failed to rename scene:', error);
+    }
+  };
+
   const formatDate = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const toggleTrackChanges = () => {
+    setEditorState(prev => ({
+      ...prev,
+      isTrackChangesActive: !prev.isTrackChangesActive
+    }));
+    // Track changes are controlled via extension configuration
+    // The extension will be recreated with the new state
+  };
+
+  const toggleFindReplace = () => {
+    setEditorState(prev => ({
+      ...prev,
+      isFindReplaceOpen: !prev.isFindReplaceOpen
+    }));
+  };
+
+  const toggleTypewriterMode = () => {
+    setEditorState(prev => ({
+      ...prev,
+      isTypewriterMode: !prev.isTypewriterMode
+    }));
+  };
+
+  const toggleFocusMode = () => {
+    setEditorState(prev => ({
+      ...prev,
+      isFocusMode: !prev.isFocusMode
+    }));
   };
 
   if (!editor) {
@@ -148,6 +296,14 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
             </span>
           )}
           <Button
+            onClick={() => setShowExportDialog(true)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <DownloadIcon size={16} />
+            Export
+          </Button>
+          <Button
             onClick={handleSave}
             disabled={isSaving}
             className="flex items-center gap-2"
@@ -159,72 +315,29 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Scene Navigator */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileTextIcon size={18} />
-                Scenes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {manuscriptScenes.length === 0 ? (
-                <div className="text-sm text-muted-foreground text-center py-4">
-                  No scenes yet. Start writing to create your first scene.
-                </div>
-              ) : (
-                manuscriptScenes.map((scene) => (
-                  <button
-                    key={scene.id}
-                    onClick={() => handleSceneSelect(scene)}
-                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                      currentScene?.id === scene.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-muted'
-                    }`}
-                  >
-                    <div className="font-medium text-sm">
-                      {scene.title || `Scene ${scene.indexInManuscript + 1}`}
-                    </div>
-                    <div className="text-xs opacity-75">
-                      {scene.wordCount} words
-                    </div>
-                  </button>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Writing Stats */}
-          <Card className="mt-4">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TypeIcon size={18} />
-                Statistics
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span>Words:</span>
-                <span className="font-medium">
-                  {editor.storage.characterCount.words()}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Characters:</span>
-                <span className="font-medium">
-                  {editor.storage.characterCount.characters()}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Total Words:</span>
-                <span className="font-medium">
-                  {manuscript.totalWordCount.toLocaleString()}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Left Sidebar */}
+        <div className="lg:col-span-1 space-y-4">
+          <DocumentOutline
+            scenes={manuscriptScenes}
+            activeSceneId={currentScene?.id}
+            onSceneSelect={handleSceneSelect}
+            onScenesReorder={handleScenesReorder}
+            onSceneCreate={handleSceneCreate}
+            onSceneDelete={handleSceneDelete}
+            onSceneRename={handleSceneRename}
+            manuscriptWordCount={manuscript.totalWordCount}
+            targetWordCount={80000} // Could be configurable per manuscript
+          />
+          
+          {editor && (
+            <WritingStats
+              currentWordCount={editor.storage.characterCount.words() || 0}
+              currentCharacterCount={editor.storage.characterCount.characters() || 0}
+              totalWordCount={manuscript.totalWordCount}
+              scenes={manuscriptScenes}
+              targetWordCount={80000}
+            />
+          )}
         </div>
 
         {/* Main Editor */}
@@ -236,13 +349,15 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
                   {currentScene?.title || 'New Scene'}
                 </CardTitle>
                 
-                {/* Toolbar */}
+                {/* Enhanced Toolbar */}
                 <div className="flex items-center gap-1">
+                  {/* Basic editing */}
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => editor.chain().focus().undo().run()}
                     disabled={!editor.can().undo()}
+                    title="Undo"
                   >
                     <UndoIcon size={16} />
                   </Button>
@@ -251,14 +366,18 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
                     size="sm"
                     onClick={() => editor.chain().focus().redo().run()}
                     disabled={!editor.can().redo()}
+                    title="Redo"
                   >
                     <RedoIcon size={16} />
                   </Button>
-                  <div className="w-px h-6 bg-border mx-2" />
+                  <Separator orientation="vertical" className="h-6 mx-2" />
+                  
+                  {/* Text formatting */}
                   <Button
                     variant={editor.isActive('bold') ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => editor.chain().focus().toggleBold().run()}
+                    title="Bold"
                   >
                     <BoldIcon size={16} />
                   </Button>
@@ -266,20 +385,151 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
                     variant={editor.isActive('italic') ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => editor.chain().focus().toggleItalic().run()}
+                    title="Italic"
                   >
                     <ItalicIcon size={16} />
+                  </Button>
+                  <Separator orientation="vertical" className="h-6 mx-2" />
+                  
+                  {/* Advanced features */}
+                  <Button
+                    variant={editorState.isTrackChangesActive ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={toggleTrackChanges}
+                    title="Track Changes"
+                  >
+                    <EditIcon size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      // Placeholder for comment functionality
+                      console.log('Add comment functionality');
+                    }}
+                    disabled={editor?.state.selection.empty}
+                    title="Add Comment (Coming Soon)"
+                  >
+                    <MessageSquareIcon size={16} />
+                  </Button>
+                  <Button
+                    variant={editorState.isFindReplaceOpen ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={toggleFindReplace}
+                    title="Find & Replace (Coming Soon)"
+                  >
+                    <SearchIcon size={16} />
+                  </Button>
+                  <Separator orientation="vertical" className="h-6 mx-2" />
+                  
+                  {/* Writing modes */}
+                  <Button
+                    variant={editorState.isTypewriterMode ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={toggleTypewriterMode}
+                    title="Typewriter Mode (Coming Soon)"
+                  >
+                    <TypeIcon size={16} />
+                  </Button>
+                  <Button
+                    variant={editorState.isFocusMode ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={toggleFocusMode}
+                    title="Focus Mode (Coming Soon)"
+                  >
+                    <EyeIcon size={16} />
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
+              {/* Find & Replace Panel (Coming Soon) */}
+              {editorState.isFindReplaceOpen && (
+                <div className="border-b bg-muted/30 p-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Find..."
+                      className="px-2 py-1 text-sm border rounded flex-1"
+                      value={editorState.searchTerm}
+                      onChange={(e) => {
+                        setEditorState(prev => ({ ...prev, searchTerm: e.target.value }));
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Replace..."
+                      className="px-2 py-1 text-sm border rounded flex-1"
+                      value={editorState.replaceTerm}
+                      onChange={(e) => {
+                        setEditorState(prev => ({ ...prev, replaceTerm: e.target.value }));
+                      }}
+                    />
+                    <Button size="sm" variant="ghost" disabled>
+                      Next
+                    </Button>
+                    <Button size="sm" variant="ghost" disabled>
+                      Replace
+                    </Button>
+                    <Button size="sm" variant="ghost" disabled>
+                      All
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={toggleFindReplace}>
+                      <XIcon size={14} />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Main Editor */}
               <div className="manuscript-editor min-h-[600px]">
                 <EditorContent editor={editor} />
+              </div>
+              
+              {/* Status Bar */}
+              <div className="border-t bg-muted/30 px-4 py-2 text-xs text-muted-foreground flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  {editor && (
+                    <>
+                      <span className="flex items-center gap-1">
+                        <TypeIcon size={12} />
+                        Words: {editor.storage.characterCount.words() || 0}
+                      </span>
+                      <span>Characters: {editor.storage.characterCount.characters() || 0}</span>
+                      {editorState.isTrackChangesActive && (
+                        <span className="flex items-center gap-1">
+                          <EditIcon size={12} />
+                          Track changes enabled
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {lastSaved && (
+                    <span className="flex items-center gap-1">
+                      <ClockIcon size={12} />
+                      Auto-saved at {formatDate(lastSaved)}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1">
+                    <CheckIcon size={12} />
+                    Scene: {currentScene?.title || 'Untitled'}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {showExportDialog && (
+        <ExportDialog
+          manuscriptTitle={manuscript.title}
+          content={editor?.getHTML() || ''}
+          onClose={() => setShowExportDialog(false)}
+        />
+      )}
     </div>
   );
 }

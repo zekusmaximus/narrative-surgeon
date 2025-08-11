@@ -1,0 +1,242 @@
+/* Track Changes Styles */
+.track-change {
+  position: relative;
+  border-radius: 2px;
+  padding: 1px 2px;
+}
+
+.track-change-insert {
+  background-color: rgba(34, 197, 94, 0.2);
+  border-bottom: 2px solid rgb(34, 197, 94);
+}
+
+.track-change-delete {
+  background-color: rgba(239, 68, 68, 0.2);
+  text-decoration: line-through;
+  text-decoration-color: rgb(239, 68, 68);
+}
+
+.track-change::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 1000;
+}
+
+.track-change:hover::after {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+/* Comment Styles */
+.comment-highlight {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-radius: 2px;
+  position: relative;
+}
+
+.comment-icon {
+  position: absolute;
+  right: -24px;
+  top: 0;
+  cursor: pointer;
+  font-size: 12px;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.comment-active {
+  color: #3b82f6;
+}
+
+.comment-resolved {
+  color: #6b7280;
+  opacity: 0.6;
+}
+
+/* Find and Replace Styles */
+.search-result {
+  background-color: rgba(250, 204, 21, 0.3);
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.search-result-active {
+  background-color: rgba(245, 158, 11, 0.6);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Typewriter Mode Styles */
+.typewriter-mode {
+  transition: transform 0.2s ease-in-out;
+}
+
+.typewriter-mode .ProseMirror {
+  padding-bottom: 50vh;
+  scroll-behavior: smooth;
+}
+
+.typewriter-mode .ProseMirror:focus {
+  outline: none;
+}
+
+/* Focus Mode Styles */
+.focus-mode .ProseMirror {
+  position: relative;
+}
+
+.focus-fade {
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.focus-highlight {
+  background-color: transparent;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.focus-sentence {
+  /* Optional: subtle highlighting for focused sentence */
+}
+
+.focus-paragraph {
+  /* Optional: subtle highlighting for focused paragraph */
+}
+
+/* Dark mode support */
+.dark .track-change-insert {
+  background-color: rgba(34, 197, 94, 0.15);
+}
+
+.dark .track-change-delete {
+  background-color: rgba(239, 68, 68, 0.15);
+}
+
+.dark .comment-highlight {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.dark .search-result {
+  background-color: rgba(250, 204, 21, 0.2);
+}
+
+.dark .search-result-active {
+  background-color: rgba(245, 158, 11, 0.4);
+}
+
+.dark .focus-fade {
+  opacity: 0.4;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .track-change-insert {
+    background-color: rgba(34, 197, 94, 0.3);
+    border-bottom-width: 3px;
+  }
+  
+  .track-change-delete {
+    background-color: rgba(239, 68, 68, 0.3);
+    text-decoration-thickness: 2px;
+  }
+  
+  .search-result-active {
+    background-color: rgba(245, 158, 11, 0.8);
+  }
+  
+  .focus-fade {
+    opacity: 0.6;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .track-change,
+  .comment-icon,
+  .search-result,
+  .typewriter-mode,
+  .focus-fade,
+  .focus-highlight {
+    transition: none !important;
+  }
+  
+  .search-result-active {
+    animation: none !important;
+  }
+  
+  .typewriter-mode .ProseMirror {
+    scroll-behavior: auto;
+  }
+}
+
+/* Editor-specific enhancements */
+.manuscript-editor {
+  line-height: 1.8;
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+.manuscript-editor .ProseMirror {
+  max-width: none;
+  padding: 2rem;
+}
+
+.manuscript-editor .ProseMirror:focus {
+  outline: none;
+}
+
+.manuscript-editor p {
+  margin-bottom: 1rem;
+}
+
+.manuscript-editor h1,
+.manuscript-editor h2,
+.manuscript-editor h3 {
+  font-weight: bold;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.manuscript-editor h1 {
+  font-size: 1.875rem;
+}
+
+.manuscript-editor h2 {
+  font-size: 1.5rem;
+}
+
+.manuscript-editor h3 {
+  font-size: 1.25rem;
+}
+
+/* Status bar enhancements */
+.editor-status-bar {
+  background-color: rgba(249, 250, 251, 0.8);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+.dark .editor-status-bar {
+  background-color: rgba(17, 24, 39, 0.8);
+  border-top-color: rgba(75, 85, 99, 0.8);
+}

@@ -28,6 +28,9 @@ interface ManuscriptStore {
   reorderScenes: (manuscriptId: string, newOrder: string[]) => Promise<void>;
   splitScene: (sceneId: string, position: number) => Promise<Scene>;
   mergeScenes: (sceneIds: string[]) => Promise<Scene>;
+  createScene: (manuscriptId: string, afterSceneId?: string) => Promise<Scene>;
+  deleteScene: (sceneId: string) => Promise<void>;
+  renameScene: (sceneId: string, newTitle: string) => Promise<void>;
   
   // Character operations
   addCharacter: (character: Omit<Character, 'id' | 'createdAt'>) => Promise<Character>;
@@ -190,7 +193,7 @@ export const useManuscriptStore = create<ManuscriptStore>((set, get) => ({
 
   reorderScenes: async (manuscriptId, newOrder) => {
     try {
-      await invoke('reorder_scenes', { manuscriptId, newOrder });
+      await invoke('reorder_scenes', { sceneIds: newOrder });
       
       const scenes = get().scenes.get(manuscriptId) || [];
       const sceneMap = new Map(scenes.map(scene => [scene.id, scene]));
@@ -207,6 +210,64 @@ export const useManuscriptStore = create<ManuscriptStore>((set, get) => ({
       
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Failed to reorder scenes' });
+      throw error;
+    }
+  },
+
+  createScene: async (manuscriptId, afterSceneId) => {
+    try {
+      const newScene = await invoke<Scene>('create_scene', { 
+        manuscriptId, 
+        afterSceneId: afterSceneId || null 
+      });
+      
+      // Reload manuscript data to get updated scenes
+      await get().loadManuscriptData(manuscriptId);
+      
+      return newScene;
+      
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to create scene' });
+      throw error;
+    }
+  },
+
+  deleteScene: async (sceneId) => {
+    try {
+      await invoke('delete_scene', { sceneId });
+      
+      // Update local state by removing the scene from all manuscript scene lists
+      const newScenes = new Map(get().scenes);
+      for (const [manuscriptId, scenes] of newScenes.entries()) {
+        const updatedScenes = scenes.filter(scene => scene.id !== sceneId);
+        newScenes.set(manuscriptId, updatedScenes);
+      }
+      
+      set({ scenes: newScenes });
+      
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to delete scene' });
+      throw error;
+    }
+  },
+
+  renameScene: async (sceneId, newTitle) => {
+    try {
+      await invoke('rename_scene', { sceneId, newTitle });
+      
+      // Update local state
+      const newScenes = new Map(get().scenes);
+      for (const [manuscriptId, scenes] of newScenes.entries()) {
+        const updatedScenes = scenes.map(scene => 
+          scene.id === sceneId ? { ...scene, title: newTitle, updatedAt: Date.now() } : scene
+        );
+        newScenes.set(manuscriptId, updatedScenes);
+      }
+      
+      set({ scenes: newScenes });
+      
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to rename scene' });
       throw error;
     }
   },

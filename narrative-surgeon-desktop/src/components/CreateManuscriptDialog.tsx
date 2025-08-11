@@ -3,7 +3,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { useManuscriptStore } from '../store/manuscriptStore';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { ArrowLeftIcon, FileIcon, UploadIcon } from 'lucide-react';
+import { BatchImportDialog } from './BatchImportDialog';
+import { ArrowLeftIcon, FileIcon, UploadIcon, FolderOpenIcon } from 'lucide-react';
 
 interface CreateManuscriptDialogProps {
   onClose: () => void;
@@ -18,6 +19,9 @@ export function CreateManuscriptDialog({ onClose, onManuscriptCreated }: CreateM
   const [targetAudience, setTargetAudience] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState<{stage: string, progress: number, message: string} | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [showBatchImport, setShowBatchImport] = useState(false);
 
   const { createManuscript } = useManuscriptStore();
 
@@ -27,6 +31,16 @@ export function CreateManuscriptDialog({ onClose, onManuscriptCreated }: CreateM
 
   const handleImportFile = () => {
     setStep('import');
+  };
+
+  const handleBatchImport = () => {
+    setShowBatchImport(true);
+  };
+
+  const handleBatchComplete = (_count: number) => {
+    setShowBatchImport(false);
+    onClose();
+    // Could show a success message here
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,24 +65,94 @@ export function CreateManuscriptDialog({ onClose, onManuscriptCreated }: CreateM
 
   const handleFileImport = async () => {
     try {
-      // In a full implementation, this would open a file dialog first
-      // For now, show an input for file path (development purposes)
-      const filePath = prompt('Enter file path to import (development mode):');
-      if (!filePath) return;
+      setIsLoading(true);
+      setError(null);
+      setImportProgress({ stage: 'opening', progress: 10, message: 'Opening file dialog...' });
 
-      const result = await invoke('import_manuscript_file', { filePath });
-      console.log('Import result:', result);
-      
-      // Create manuscript with imported content
-      const manuscript = await createManuscript(
-        result.filename.replace(/\.[^/.]+$/, ''), // Remove extension from filename
-        result.content,
-        {}
-      );
-      
-      onManuscriptCreated(manuscript);
+      // Open file dialog
+      const filePath = await invoke<string | null>('open_file_dialog');
+      if (!filePath) {
+        setIsLoading(false);
+        setImportProgress(null);
+        return;
+      }
+
+      await importFile(filePath);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to import file');
+    } finally {
+      setIsLoading(false);
+      setImportProgress(null);
+    }
+  };
+
+  const importFile = async (filePath: string) => {
+    setImportProgress({ stage: 'reading', progress: 30, message: 'Reading file...' });
+
+    // Import the selected file
+    const result = await invoke<any>('import_manuscript_file', { filePath });
+    
+    setImportProgress({ stage: 'processing', progress: 60, message: 'Processing content...' });
+    
+    // Extract title from filename or metadata
+    const manuscriptTitle = result.metadata?.title || 
+                           result.filename.replace(/\.[^/.]+$/, ''); // Remove extension from filename
+    
+    setImportProgress({ stage: 'creating', progress: 80, message: 'Creating manuscript...' });
+    
+    // Create manuscript with imported content
+    const manuscript = await createManuscript(
+      manuscriptTitle,
+      result.content,
+      {
+        genre: undefined, // Could be extracted from metadata in the future
+        targetAudience: undefined,
+      }
+    );
+    
+    setImportProgress({ stage: 'complete', progress: 100, message: 'Import complete!' });
+    
+    // Small delay to show completion
+    setTimeout(() => {
+      onManuscriptCreated(manuscript);
+    }, 500);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    const file = files[0];
+    const supportedTypes = ['.txt', '.docx', '.doc', '.rtf', '.md', '.markdown'];
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+
+    if (!supportedTypes.includes(fileExtension)) {
+      setError(`Unsupported file type: ${fileExtension}. Supported: ${supportedTypes.join(', ')}`);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // For drag & drop, we would normally handle file reading differently
+      // This is a simplified approach - for now, show an error message
+      setError('Drag & drop is not fully implemented yet. Please use the file browser instead.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to import dropped file');
     }
   };
 
@@ -111,6 +195,20 @@ export function CreateManuscriptDialog({ onClose, onManuscriptCreated }: CreateM
               </div>
             </Button>
 
+            <Button 
+              onClick={handleBatchImport}
+              variant="outline"
+              className="w-full justify-start text-left h-auto p-4"
+            >
+              <FolderOpenIcon className="mr-3" size={20} />
+              <div>
+                <div className="font-medium">Import multiple files</div>
+                <div className="text-sm text-muted-foreground">
+                  Select and import multiple manuscripts at once
+                </div>
+              </div>
+            </Button>
+
             <div className="pt-4">
               <Button onClick={onClose} variant="ghost" className="w-full">
                 Cancel
@@ -142,26 +240,68 @@ export function CreateManuscriptDialog({ onClose, onManuscriptCreated }: CreateM
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+            <div 
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                isDragOver 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-muted-foreground/25'
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <UploadIcon className="mx-auto mb-4 text-muted-foreground" size={48} />
               <p className="text-sm text-muted-foreground mb-4">
-                Drag and drop a file here, or click to browse
+                {isDragOver 
+                  ? 'Drop your file here' 
+                  : 'Drag and drop a file here, or click to browse'
+                }
               </p>
-              <Button onClick={handleFileImport} variant="outline">
-                Choose File
+              <Button 
+                onClick={handleFileImport} 
+                variant="outline"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Importing...' : 'Choose File'}
               </Button>
             </div>
             
+            {importProgress && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{importProgress.message}</span>
+                  <span className="text-muted-foreground">{Math.round(importProgress.progress)}%</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div 
+                    className="bg-primary h-2 rounded-full transition-all duration-300" 
+                    style={{ width: `${importProgress.progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            
             <div className="text-xs text-muted-foreground">
-              Supported formats: .docx, .doc, .txt, .rtf
+              Supported formats: .docx, .doc, .txt, .rtf, .md, .markdown
             </div>
 
-            <Button onClick={onClose} variant="ghost" className="w-full">
-              Cancel
-            </Button>
+            {!isLoading && (
+              <Button onClick={onClose} variant="ghost" className="w-full">
+                Cancel
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  if (showBatchImport) {
+    return (
+      <BatchImportDialog
+        onClose={() => setShowBatchImport(false)}
+        onComplete={handleBatchComplete}
+      />
     );
   }
 
