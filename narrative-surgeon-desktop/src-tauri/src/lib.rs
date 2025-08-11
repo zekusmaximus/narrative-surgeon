@@ -1,8 +1,10 @@
-mod db;
-mod fs;
-mod window;
-mod menu;
-mod export;
+pub mod db;
+pub mod fs;
+pub mod window;
+pub mod menu;
+pub mod export;
+pub mod error;
+pub mod commands;
 
 use tauri_plugin_sql::{Builder as SqlBuilder, Migration, MigrationKind};
 use tauri::Manager;
@@ -55,9 +57,18 @@ pub fn run() {
             window::list_windows,
             export::export_manuscript,
             export::get_export_formats,
-            export::validate_export_options
+            export::validate_export_options,
+            db::search_content,
+            db::create_database_backup,
+            db::log_writing_session,
+            db::get_writing_analytics,
+            db::get_performance_metrics
         ])
         .setup(|app| {
+            // Initialize database service
+            let db_service = db::DatabaseService::new();
+            app.manage(db_service);
+            
             // Create and set the app menu
             let menu = menu::create_app_menu(app.handle())?;
             app.set_menu(menu)?;

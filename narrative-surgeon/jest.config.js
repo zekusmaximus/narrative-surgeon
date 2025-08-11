@@ -1,21 +1,39 @@
 module.exports = {
-  testEnvironment: 'node',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  preset: "react-native",
+  setupFilesAfterEnv: [
+    "<rootDir>/src/__tests__/setup.ts"
+  ],
   testMatch: [
-    '**/__tests__/**/*.(ts|tsx)',
-    '**/*.(test|spec).(ts|tsx)'
+    "<rootDir>/src/__tests__/**/*.(test|spec).(js|jsx|ts|tsx)",
+    "<rootDir>/src/**/__tests__/**/*.(test|spec).(js|jsx|ts|tsx)",
   ],
-  collectCoverageFrom: [
-    'src/**/*.(ts|tsx)',
-    '!src/**/*.d.ts',
-    '!src/**/index.ts',
+  testPathIgnorePatterns: [
+    "<rootDir>/node_modules/",
+    "<rootDir>/android/",
+    "<rootDir>/ios/",
   ],
-  coverageDirectory: 'coverage',
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest',
-  },
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|expo|@expo|uuid)/)',
+    "node_modules/(?\!(react-native|@react-native|@tauri-apps)/)",
   ],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
+  collectCoverageFrom: [
+    "src/**/*.{ts,tsx}",
+    "\!src/**/*.d.ts",
+    "\!src/__tests__/**/*",
+    "\!src/**/index.ts",
+  ],
+  coverageDirectory: "<rootDir>/coverage",
+  coverageReporters: ["text", "lcov", "html"],
+  testEnvironment: "jsdom",
+  moduleNameMapping: {
+    "\.(css|less|scss|sass)$": "identity-obj-proxy",
+    "\.(gif|ttf|eot|svg|png)$": "<rootDir>/src/__tests__/__mocks__/fileMock.js",
+  },
+  globals: {
+    __DEV__: true,
+  },
+  testTimeout: 10000,
+  maxWorkers: 4,
+  verbose: true,
+  errorOnDeprecated: true,
 };
