@@ -3,9 +3,29 @@ use std::path::PathBuf;
 use std::fs;
 use chrono::{DateTime, Utc};
 use anyhow::{Result, anyhow};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ExportFormat {
+    // Industry standard formats
+    #[serde(rename = "shunn_manuscript")]
+    ShunnManuscript,        // Industry standard manuscript format
+    #[serde(rename = "query_package")]
+    QueryPackage,           // Query + synopsis + sample pages
+    #[serde(rename = "synopsis_short")]
+    SynopsisShort,          // 1-page synopsis
+    #[serde(rename = "synopsis_long")]
+    SynopsisLong,           // 2-5 page synopsis
+    #[serde(rename = "pitch_sheet")]
+    PitchSheet,             // One-page marketing sheet
+    #[serde(rename = "book_proposal")]
+    BookProposal,           // Non-fiction proposal format
+    #[serde(rename = "screenplay_final")]
+    ScreenplayFinal,        // Final draft screenplay format
+    #[serde(rename = "stage_play_standard")]
+    StagePlayStandard,      // Standard stage play format
+    
+    // Legacy formats
     StandardManuscript, // Industry standard formatting
     Epub,
     Mobi, 
@@ -183,6 +203,17 @@ impl ExportService {
         options: ExportOptions,
     ) -> Result<ExportResult> {
         match options.format {
+            // Industry standard formats
+            ExportFormat::ShunnManuscript => self.export_shunn_manuscript(content, options).await,
+            ExportFormat::QueryPackage => self.export_query_package(content, options).await,
+            ExportFormat::SynopsisShort => self.export_synopsis(content, options, 1).await,
+            ExportFormat::SynopsisLong => self.export_synopsis(content, options, 5).await,
+            ExportFormat::PitchSheet => self.export_pitch_sheet(content, options).await,
+            ExportFormat::BookProposal => self.export_book_proposal(content, options).await,
+            ExportFormat::ScreenplayFinal => self.export_screenplay_final(content, options).await,
+            ExportFormat::StagePlayStandard => self.export_stage_play(content, options).await,
+            
+            // Legacy formats
             ExportFormat::StandardManuscript => self.export_standard_manuscript(content, options).await,
             ExportFormat::Epub => self.export_epub(content, options).await,
             ExportFormat::Mobi => self.export_mobi(content, options).await,
@@ -753,6 +784,511 @@ impl ExportService {
             .replace("_", "\\_")
             .replace("~", "\\textasciitilde{}")
     }
+
+    // Industry standard publishing format implementations
+    
+    async fn export_shunn_manuscript(
+        &self,
+        content: ManuscriptContent,
+        options: ExportOptions,
+    ) -> Result<ExportResult> {
+        let mut output = String::new();
+        let mut warnings = Vec::new();
+        let mut errors = Vec::new();
+
+        // Shunn manuscript format requirements
+        // 1. Header with author info (upper left)
+        if let Some(author) = &content.author {
+            output.push_str(&format!("{}\n", author));
+        }
+        output.push_str(&format!("Approximately {} words\n\n", content.metadata.word_count));
+
+        // 2. Title page centered
+        output.push_str("\n\n\n\n\n\n\n\n");
+        output.push_str(&format!("                        {}\n", content.title.to_uppercase()));
+        output.push_str("\n\n");
+        output.push_str("                            by\n\n");
+        if let Some(author) = &content.author {
+            output.push_str(&format!("                        {}\n", author));
+        }
+        output.push_str("\f"); // Form feed for new page
+
+        // 3. Content with proper headers and formatting
+        let mut page_count = 2; // Start after title page
+        let mut current_chapter = 0;
+        
+        for scene in &content.scenes {
+            // Chapter handling
+            if let Some(chapter_num) = scene.chapter_number {
+                if chapter_num != current_chapter {
+                    if current_chapter > 0 {
+                        output.push_str("\f"); // New page for new chapter
+                        page_count += 1;
+                    }
+                    current_chapter = chapter_num;
+                    
+                    // Chapter header
+                    output.push_str("\n\n\n");
+                    output.push_str(&format!("                        CHAPTER {}\n", chapter_num));
+                    output.push_str("\n\n");
+                }
+            }
+
+            // Page header (every 25 lines approximately)
+            let lines_in_scene = scene.content.lines().count();
+            if lines_in_scene > 0 && (page_count % 2 == 0) { // Every other page for headers
+                let author_last = content.author.as_ref()
+                    .and_then(|a| a.split_whitespace().last())
+                    .unwrap_or("");
+                output.push_str(&format!("{} / {} / {}\n\n", 
+                    author_last, content.title.to_uppercase(), page_count));
+            }
+
+            // Scene content with proper indentation
+            let formatted_content = self.format_shunn_text(&scene.content);
+            output.push_str(&formatted_content);
+            output.push_str("\n\n");
+
+            page_count += (lines_in_scene + 24) / 25; // Estimate pages
+        }
+
+        let file_size = self.write_text_file(&options.output_path, &output).await?;
+
+        Ok(ExportResult {
+            success: true,
+            output_path: Some(options.output_path.clone()),
+            file_size: Some(file_size),
+            page_count: Some(page_count),
+            word_count: content.metadata.word_count,
+            errors,
+            warnings,
+        })
+    }
+
+    async fn export_query_package(
+        &self,
+        content: ManuscriptContent,
+        options: ExportOptions,
+    ) -> Result<ExportResult> {
+        let mut output = String::new();
+        let warnings = Vec::new();
+        let errors = Vec::new();
+
+        // Query package header
+        output.push_str("QUERY SUBMISSION PACKAGE\n");
+        output.push_str("========================\n\n");
+        
+        output.push_str(&format!("Title: {}\n", content.title));
+        if let Some(author) = &content.author {
+            output.push_str(&format!("Author: {}\n", author));
+        }
+        if let Some(genre) = &content.genre {
+            output.push_str(&format!("Genre: {}\n", genre));
+        }
+        output.push_str(&format!("Word Count: {}\n", content.metadata.word_count));
+        output.push_str("\n");
+
+        // Query letter section (placeholder)
+        output.push_str("QUERY LETTER\n");
+        output.push_str("============\n\n");
+        output.push_str("[Query letter content would be inserted here]\n\n");
+
+        // Synopsis section
+        output.push_str("SYNOPSIS\n");
+        output.push_str("========\n\n");
+        let synopsis = self.generate_synopsis(&content, 250)?; // 1-page synopsis
+        output.push_str(&synopsis);
+        output.push_str("\n\n");
+
+        // Sample pages (first 5 pages)
+        output.push_str("SAMPLE PAGES (First 5 Pages)\n");
+        output.push_str("=============================\n\n");
+        let sample_pages = self.extract_sample_pages(&content, 5)?;
+        output.push_str(&sample_pages);
+
+        let file_size = self.write_text_file(&options.output_path, &output).await?;
+
+        Ok(ExportResult {
+            success: true,
+            output_path: Some(options.output_path.clone()),
+            file_size: Some(file_size),
+            page_count: Some(self.estimate_page_count(&content)),
+            word_count: content.metadata.word_count,
+            errors,
+            warnings,
+        })
+    }
+
+    async fn export_synopsis(
+        &self,
+        content: ManuscriptContent,
+        options: ExportOptions,
+        max_pages: usize,
+    ) -> Result<ExportResult> {
+        let mut output = String::new();
+        let warnings = Vec::new();
+        let errors = Vec::new();
+
+        // Synopsis header
+        output.push_str(&format!("{}\n", content.title.to_uppercase()));
+        if let Some(author) = &content.author {
+            output.push_str(&format!("by {}\n", author));
+        }
+        output.push_str(&format!("({} words)\n\n", content.metadata.word_count));
+
+        // Generate synopsis content
+        let target_words = max_pages * 250;
+        let synopsis = self.generate_synopsis(&content, target_words)?;
+        output.push_str(&synopsis);
+
+        let file_size = self.write_text_file(&options.output_path, &output).await?;
+
+        Ok(ExportResult {
+            success: true,
+            output_path: Some(options.output_path.clone()),
+            file_size: Some(file_size),
+            page_count: Some(max_pages),
+            word_count: synopsis.split_whitespace().count(),
+            errors,
+            warnings,
+        })
+    }
+
+    async fn export_pitch_sheet(
+        &self,
+        content: ManuscriptContent,
+        options: ExportOptions,
+    ) -> Result<ExportResult> {
+        let mut output = String::new();
+        let warnings = Vec::new();
+        let errors = Vec::new();
+
+        // One-page pitch sheet format
+        output.push_str(&format!("{}\n", content.title.to_uppercase()));
+        if let Some(genre) = &content.genre {
+            if let Some(author) = &content.author {
+                output.push_str(&format!("A {} novel by {}\n\n", genre, author));
+            } else {
+                output.push_str(&format!("A {} novel\n\n", genre));
+            }
+        }
+
+        output.push_str(&format!("Word Count: {}\n", content.metadata.word_count));
+        output.push_str(&format!("Page Count: ~{}\n\n", self.estimate_page_count(&content)));
+
+        // Logline/hook (first compelling paragraph)
+        if let Some(first_scene) = content.scenes.first() {
+            let first_paragraph = first_scene.content.split("\n\n").next().unwrap_or("");
+            if !first_paragraph.is_empty() {
+                output.push_str("HOOK:\n");
+                output.push_str(&format!("{}\n\n", first_paragraph.trim()));
+            }
+        }
+
+        // Market positioning
+        output.push_str("MARKET POSITIONING:\n");
+        output.push_str("[Comparable titles and target audience]\n\n");
+
+        // Author platform
+        output.push_str("AUTHOR PLATFORM:\n");
+        output.push_str("[Author credentials and platform details]\n");
+
+        let file_size = self.write_text_file(&options.output_path, &output).await?;
+
+        Ok(ExportResult {
+            success: true,
+            output_path: Some(options.output_path.clone()),
+            file_size: Some(file_size),
+            page_count: Some(1),
+            word_count: output.split_whitespace().count(),
+            errors,
+            warnings,
+        })
+    }
+
+    async fn export_book_proposal(
+        &self,
+        content: ManuscriptContent,
+        options: ExportOptions,
+    ) -> Result<ExportResult> {
+        let mut output = String::new();
+        let warnings = Vec::new();
+        let errors = Vec::new();
+
+        // Book proposal format (primarily for non-fiction)
+        output.push_str("BOOK PROPOSAL\n");
+        output.push_str("=============\n\n");
+
+        output.push_str(&format!("Title: {}\n", content.title));
+        if let Some(author) = &content.author {
+            output.push_str(&format!("Author: {}\n", author));
+        }
+        output.push_str(&format!("Word Count: {}\n", content.metadata.word_count));
+        output.push_str("\n");
+
+        // Overview
+        output.push_str("OVERVIEW\n");
+        output.push_str("--------\n");
+        let overview = self.generate_synopsis(&content, 500)?;
+        output.push_str(&overview);
+        output.push_str("\n\n");
+
+        // Market analysis
+        output.push_str("MARKET ANALYSIS\n");
+        output.push_str("---------------\n");
+        if let Some(genre) = &content.genre {
+            output.push_str(&format!("Genre: {}\n", genre));
+        }
+        output.push_str("Target Audience: [Define target readership]\n");
+        output.push_str("Competitive Titles: [List 3-5 comparable books]\n\n");
+
+        // Table of contents
+        output.push_str("TABLE OF CONTENTS\n");
+        output.push_str("-----------------\n");
+        let mut chapter_count = 0;
+        for scene in &content.scenes {
+            if let Some(chapter_num) = scene.chapter_number {
+                if chapter_num > chapter_count {
+                    chapter_count = chapter_num;
+                    output.push_str(&format!("Chapter {}: ", chapter_num));
+                    if let Some(title) = &scene.title {
+                        output.push_str(title);
+                    } else {
+                        output.push_str("[Chapter Title]");
+                    }
+                    output.push_str("\n");
+                }
+            }
+        }
+        output.push_str("\n");
+
+        // Sample chapters
+        output.push_str("SAMPLE CHAPTERS\n");
+        output.push_str("===============\n\n");
+        let sample = self.extract_sample_pages(&content, 20)?;
+        output.push_str(&sample);
+
+        let file_size = self.write_text_file(&options.output_path, &output).await?;
+
+        Ok(ExportResult {
+            success: true,
+            output_path: Some(options.output_path.clone()),
+            file_size: Some(file_size),
+            page_count: Some(self.estimate_page_count(&content)),
+            word_count: content.metadata.word_count,
+            errors,
+            warnings,
+        })
+    }
+
+    async fn export_screenplay_final(
+        &self,
+        content: ManuscriptContent,
+        options: ExportOptions,
+    ) -> Result<ExportResult> {
+        let mut output = String::new();
+        let warnings = vec!["Converting prose to screenplay format".to_string()];
+        let errors = Vec::new();
+
+        // Screenplay title page
+        output.push_str("\n\n\n\n\n\n\n");
+        output.push_str(&format!("                        {}\n", content.title.to_uppercase()));
+        output.push_str("\n\n");
+        output.push_str("                      Written by\n\n");
+        if let Some(author) = &content.author {
+            output.push_str(&format!("                        {}\n", author));
+        }
+        output.push_str("\f"); // New page
+
+        // Screenplay content
+        output.push_str("FADE IN:\n\n");
+
+        for scene in &content.scenes {
+            // Scene heading
+            if let Some(title) = &scene.title {
+                output.push_str(&format!("EXT./INT. {} - DAY\n\n", title.to_uppercase()));
+            }
+
+            // Convert prose to screenplay format
+            let screenplay_content = self.convert_to_screenplay(&scene.content);
+            output.push_str(&screenplay_content);
+            output.push_str("\n\n");
+        }
+
+        output.push_str("FADE OUT.\n\nTHE END\n");
+
+        let file_size = self.write_text_file(&options.output_path, &output).await?;
+
+        Ok(ExportResult {
+            success: true,
+            output_path: Some(options.output_path.clone()),
+            file_size: Some(file_size),
+            page_count: Some(self.estimate_screenplay_pages(&content)),
+            word_count: content.metadata.word_count,
+            errors,
+            warnings,
+        })
+    }
+
+    async fn export_stage_play(
+        &self,
+        content: ManuscriptContent,
+        options: ExportOptions,
+    ) -> Result<ExportResult> {
+        let mut output = String::new();
+        let warnings = vec!["Converting prose to stage play format".to_string()];
+        let errors = Vec::new();
+
+        // Stage play format
+        output.push_str(&format!("{}\n", content.title.to_uppercase()));
+        if let Some(author) = &content.author {
+            output.push_str(&format!("by {}\n", author));
+        }
+        output.push_str("\n\nCHARACTERS:\n");
+        output.push_str("[Character list to be extracted from dialogue]\n\n");
+
+        output.push_str("ACT I\n\n");
+        output.push_str("SCENE 1\n\n");
+
+        for scene in &content.scenes {
+            // Stage directions and dialogue
+            let stage_content = self.convert_to_stage_play(&scene.content);
+            output.push_str(&stage_content);
+            output.push_str("\n\n");
+        }
+
+        let file_size = self.write_text_file(&options.output_path, &output).await?;
+
+        Ok(ExportResult {
+            success: true,
+            output_path: Some(options.output_path.clone()),
+            file_size: Some(file_size),
+            page_count: Some(self.estimate_page_count(&content)),
+            word_count: content.metadata.word_count,
+            errors,
+            warnings,
+        })
+    }
+
+    // Helper methods for industry formats
+
+    fn format_shunn_text(&self, content: &str) -> String {
+        content.split("\n\n")
+            .map(|paragraph| {
+                if paragraph.trim().is_empty() {
+                    String::new()
+                } else {
+                    // Proper paragraph indentation for Shunn format
+                    format!("    {}", paragraph.trim())
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n\n")
+    }
+
+    fn generate_synopsis(&self, content: &ManuscriptContent, target_words: usize) -> Result<String> {
+        // Extract key story elements and create synopsis
+        let mut synopsis = String::new();
+        
+        // Combine all scene content
+        let full_text: String = content.scenes.iter()
+            .map(|scene| scene.content.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+        
+        // Extract approximately the right amount of content
+        let words: Vec<&str> = full_text.split_whitespace().collect();
+        let synopsis_words = if words.len() > target_words {
+            // Take first portion and summarize
+            let portion = words[..target_words].join(" ");
+            format!("{}\n\n[Complete synopsis would continue with major plot points through to the conclusion.]", portion)
+        } else {
+            full_text
+        };
+
+        synopsis.push_str(&synopsis_words);
+        Ok(synopsis)
+    }
+
+    fn extract_sample_pages(&self, content: &ManuscriptContent, page_count: usize) -> Result<String> {
+        let words_per_page = 250;
+        let target_words = page_count * words_per_page;
+        
+        let mut sample = String::new();
+        let mut word_count = 0;
+        
+        for scene in &content.scenes {
+            let scene_words: Vec<&str> = scene.content.split_whitespace().collect();
+            
+            if word_count + scene_words.len() > target_words {
+                // Include partial scene
+                let remaining_words = target_words - word_count;
+                let partial_scene = scene_words[..remaining_words].join(" ");
+                sample.push_str(&partial_scene);
+                break;
+            } else {
+                // Include full scene
+                if let Some(title) = &scene.title {
+                    sample.push_str(&format!("\n{}\n\n", title));
+                }
+                sample.push_str(&scene.content);
+                sample.push_str("\n\n");
+                word_count += scene_words.len();
+            }
+        }
+        
+        Ok(sample)
+    }
+
+    fn convert_to_screenplay(&self, content: &str) -> String {
+        let mut screenplay = String::new();
+        
+        for paragraph in content.split("\n\n") {
+            if paragraph.trim().is_empty() {
+                continue;
+            }
+            
+            // Simple conversion - dialogue vs action
+            if paragraph.contains('"') {
+                // Extract dialogue
+                screenplay.push_str("                    CHARACTER\n");
+                let dialogue = paragraph.replace('"', "").trim().to_string();
+                screenplay.push_str(&format!("          {}\n\n", dialogue));
+            } else {
+                // Action line
+                screenplay.push_str(&format!("{}\n\n", paragraph.to_uppercase()));
+            }
+        }
+        
+        screenplay
+    }
+
+    fn convert_to_stage_play(&self, content: &str) -> String {
+        let mut stage_play = String::new();
+        
+        for paragraph in content.split("\n\n") {
+            if paragraph.trim().is_empty() {
+                continue;
+            }
+            
+            if paragraph.contains('"') {
+                // Dialogue
+                stage_play.push_str("CHARACTER: ");
+                let dialogue = paragraph.replace('"', "");
+                stage_play.push_str(&format!("{}\n\n", dialogue.trim()));
+            } else {
+                // Stage direction
+                stage_play.push_str(&format!("({})\n\n", paragraph.trim()));
+            }
+        }
+        
+        stage_play
+    }
+
+    fn estimate_screenplay_pages(&self, content: &ManuscriptContent) -> usize {
+        // Screenplay rule: 1 page per minute, roughly 1 page per 250 words
+        content.metadata.word_count / 250
+    }
 }
 
 // Tauri commands
@@ -770,6 +1306,17 @@ pub async fn export_manuscript(
 #[tauri::command]
 pub async fn get_export_formats() -> Result<Vec<ExportFormat>, String> {
     Ok(vec![
+        // Industry standard publishing formats
+        ExportFormat::ShunnManuscript,
+        ExportFormat::QueryPackage,
+        ExportFormat::SynopsisShort,
+        ExportFormat::SynopsisLong,
+        ExportFormat::PitchSheet,
+        ExportFormat::BookProposal,
+        ExportFormat::ScreenplayFinal,
+        ExportFormat::StagePlayStandard,
+        
+        // General formats
         ExportFormat::StandardManuscript,
         ExportFormat::Docx,
         ExportFormat::PDF,

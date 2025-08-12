@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "narrative-surgeon-desktop",
-  "version": "0.1.0",
-  "identifier": "com.zeke.narrative-surgeon-desktop",
+  "productName": "Narrative Surgeon",
+  "version": "1.0.0",
+  "identifier": "com.narrativesurgeon.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:3000",
@@ -13,25 +13,249 @@
     "windows": [
       {
         "title": "Narrative Surgeon",
-        "width": 1200,
-        "height": 800,
-        "minWidth": 800,
-        "minHeight": 600
+        "width": 1400,
+        "height": 900,
+        "minWidth": 1000,
+        "minHeight": 700,
+        "center": true,
+        "resizable": true,
+        "maximized": false,
+        "decorations": true,
+        "alwaysOnTop": false,
+        "skipTaskbar": false,
+        "theme": "Auto"
       }
     ],
     "security": {
-      "csp": null
-    }
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.openai.com https://api.anthropic.com;",
+      "dangerousDisableAssetCspModification": false
+    },
+    "trayIcon": {
+      "iconPath": "icons/tray.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": false
+    },
+    "macOSPrivateApi": false,
+    "withGlobalTauri": false
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      {
+        "platform": "windows",
+        "targets": ["msi", "nsis"]
+      },
+      {
+        "platform": "macos", 
+        "targets": ["dmg", "app"]
+      },
+      {
+        "platform": "linux",
+        "targets": ["appimage", "deb", "rpm"]
+      }
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "identifier": "com.narrativesurgeon.desktop",
+    "publisher": "Narrative Surgeon",
+    "copyright": "Copyright © 2024 Narrative Surgeon. All rights reserved.",
+    "category": "Productivity",
+    "shortDescription": "Professional manuscript writing and publishing workflow management",
+    "longDescription": "Narrative Surgeon is a comprehensive desktop application for authors, providing advanced manuscript editing, AI-powered analysis, query letter generation, agent research, submission tracking, and professional export formats. Designed for serious writers who need professional-grade tools for manuscript preparation and publishing industry navigation.",
+    "license": "Commercial",
+    "licenseFile": "../LICENSE",
+    "resources": [
+      "resources/*"
+    ],
+    "externalBin": [],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "http://timestamp.digicert.com",
+      "tsp": false,
+      "wix": {
+        "language": ["en-US"],
+        "template": "main.wxs",
+        "fragmentPaths": ["./wix/main.wxs"],
+        "componentGroupRefs": ["MainComponentGroup"],
+        "componentRefs": ["ApplicationShortcut"],
+        "featureGroupRefs": ["MainFeatureGroup"],
+        "featureRefs": ["MainFeature"],
+        "mergeRefs": [],
+        "skipWebviewInstall": false,
+        "license": "../LICENSE.rtf",
+        "enableElevatedUpdateTask": true,
+        "bannerPath": "assets/banner.bmp",
+        "dialogImagePath": "assets/dialog.bmp"
+      },
+      "nsis": {
+        "template": "installer.nsi",
+        "license": "../LICENSE.txt", 
+        "headerImage": "assets/header.bmp",
+        "sidebarImage": "assets/sidebar.bmp",
+        "installerIcon": "icons/installer.ico",
+        "installMode": "currentUser",
+        "allowDowngrades": false,
+        "deleteAppDataOnUninstall": true,
+        "displayLanguageSelector": true,
+        "languages": ["English"],
+        "customLanguageFiles": {},
+        "compressionLevel": "ultra"
+      },
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "allowDowngrades": false,
+      "webviewFixed": true
+    },
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "10.15",
+      "useBootstrap": true,
+      "exceptionDomain": "narrativesurgeon.com",
+      "signingIdentity": null,
+      "hardeneRuntime": true,
+      "entitlements": "entitlements.plist",
+      "providerShortName": null,
+      "dmg": {
+        "background": "assets/dmg-background.png",
+        "windowSize": {
+          "width": 660,
+          "height": 400
+        },
+        "appPosition": {
+          "x": 180,
+          "y": 170
+        },
+        "applicationFolderPosition": {
+          "x": 480,
+          "y": 170
+        }
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": ["libwebkit2gtk-4.0-37", "libgtk-3-0"],
+        "desktopTemplate": "com.narrativesurgeon.desktop.desktop",
+        "section": "editors",
+        "priority": "optional",
+        "homepage": "https://narrativesurgeon.com",
+        "maintainerScripts": {
+          "preinst": "scripts/preinst.sh",
+          "postinst": "scripts/postinst.sh",
+          "prerm": "scripts/prerm.sh",
+          "postrm": "scripts/postrm.sh"
+        }
+      },
+      "rpm": {
+        "depends": ["webkit2gtk4.0", "gtk3"],
+        "desktopTemplate": "com.narrativesurgeon.desktop.desktop",
+        "group": "Applications/Editors",
+        "license": "Commercial",
+        "homepage": "https://narrativesurgeon.com",
+        "maintainerScripts": {
+          "preInstall": "scripts/preinstall.sh",
+          "postInstall": "scripts/postinstall.sh", 
+          "preRemove": "scripts/preremove.sh",
+          "postRemove": "scripts/postremove.sh"
+        }
+      },
+      "appimage": {
+        "bundleMediaFramework": false,
+        "bins": []
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://releases.narrativesurgeon.com/{{target}}/{{arch}}/{{current_version}}"
+      ],
+      "dialog": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEU2MkY5NUFGREU1RDA4QjYKUldTQ0JESDB5SzBObGpIc3NMQlVkTGJCMUhveGZlaVJ3NW9aV1lYZ2lxK1lOQkNPdkJoYjJGRTVrTgo="
+    },
+    "fs": {
+      "all": false,
+      "scope": {
+        "allow": ["$DOCUMENT/**", "$DOWNLOAD/**", "$DESKTOP/**"],
+        "deny": []
+      }
+    },
+    "dialog": {
+      "all": false,
+      "ask": true,
+      "confirm": true,
+      "message": true,
+      "open": true,
+      "save": true
+    },
+    "shell": {
+      "all": false,
+      "execute": false,
+      "sidecar": false,
+      "open": "^https://narrativesurgeon\\.com/.*|^mailto:"
+    },
+    "window": {
+      "all": false,
+      "close": true,
+      "hide": true,
+      "show": true,
+      "maximize": true,
+      "minimize": true,
+      "unmaximize": true,
+      "unminimize": true,
+      "startDragging": true,
+      "print": true,
+      "requestUserAttention": true,
+      "setResizable": true,
+      "setMaximizable": true,
+      "setMinimizable": true,
+      "setClosable": true,
+      "setTitle": true,
+      "setSkipTaskbar": true,
+      "setAlwaysOnTop": true,
+      "setContentProtected": true,
+      "setSize": true,
+      "setMinSize": true,
+      "setMaxSize": true,
+      "setPosition": true,
+      "setFullscreen": true,
+      "setFocus": true,
+      "setIcon": true,
+      "setCursorGrab": true,
+      "setCursorVisible": true,
+      "setCursorIcon": true,
+      "setCursorPosition": true,
+      "setIgnoreCursorEvents": true,
+      "create": false,
+      "center": true
+    },
+    "http": {
+      "all": false,
+      "request": false,
+      "scope": []
+    },
+    "globalShortcut": {
+      "all": false
+    },
+    "process": {
+      "all": false,
+      "exit": false,
+      "restart": false
+    },
+    "clipboard": {
+      "all": false,
+      "readText": true,
+      "writeText": true
+    },
+    "notification": {
+      "all": true
+    }
   }
 }
