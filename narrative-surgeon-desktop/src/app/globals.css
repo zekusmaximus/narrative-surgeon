@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Manuscript Editor Styles */
+.manuscript-editor {
+  @apply min-h-[600px] p-6 border border-border rounded-lg bg-background;
+}
+
+.manuscript-editor .ProseMirror {
+  @apply outline-none min-h-[500px] prose prose-lg max-w-none;
+  line-height: 2.0;
+  font-family: 'Times New Roman', serif;
+}
+
+.manuscript-editor .ProseMirror p {
+  @apply mb-4;
+  text-indent: 2em;
+}
+
+.manuscript-editor .ProseMirror p:first-child {
+  text-indent: 0;
+}
+
+.manuscript-editor .ProseMirror h1,
+.manuscript-editor .ProseMirror h2,
+.manuscript-editor .ProseMirror h3 {
+  @apply font-bold mb-6 mt-8;
+  text-indent: 0;
+  text-align: center;
+}
+
+/* Scene break styling */
+.manuscript-editor .ProseMirror hr {
+  @apply border-none text-center my-8;
+}
+
+.manuscript-editor .ProseMirror hr::after {
+  content: "***";
+  @apply text-2xl font-bold;
+}
+
+/* Selection styling */
+.manuscript-editor .ProseMirror ::selection {
+  @apply bg-blue-200;
+}
+
+/* Placeholder styling */
+.manuscript-editor .ProseMirror .is-empty:first-child::before {
+  content: attr(data-placeholder);
+  @apply text-muted-foreground pointer-events-none;
+  float: left;
+  height: 0;
+}

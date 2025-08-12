@@ -5,16 +5,18 @@
   "identifier": "com.zeke.narrative-surgeon-desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:3000",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
   "app": {
     "windows": [
       {
-        "title": "narrative-surgeon-desktop",
-        "width": 800,
-        "height": 600
+        "title": "Narrative Surgeon",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600
       }
     ],
     "security": {

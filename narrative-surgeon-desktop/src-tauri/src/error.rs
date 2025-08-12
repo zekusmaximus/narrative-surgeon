@@ -140,7 +140,7 @@ impl AppError {
         }
     }
     
-    pub fn file_system<S: Into<String>>(message: S, operation: S) -> Self {
+    pub fn file_system<M: Into<String>, O: Into<String>>(message: M, operation: O) -> Self {
         Self::FileSystem {
             message: message.into(),
             path: None,
@@ -149,7 +149,7 @@ impl AppError {
         }
     }
     
-    pub fn file_system_with_path<S: Into<String>>(message: S, operation: S, path: PathBuf) -> Self {
+    pub fn file_system_with_path<M: Into<String>, O: Into<String>>(message: M, operation: O, path: PathBuf) -> Self {
         Self::FileSystem {
             message: message.into(),
             path: Some(path),

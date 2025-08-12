@@ -2,6 +2,7 @@ use tauri::{
     menu::{Menu, MenuBuilder, MenuItem, MenuItemBuilder, SubmenuBuilder, AboutMetadata},
     AppHandle, Manager, Wry
 };
+use tauri::Emitter;
 
 pub fn create_app_menu(app_handle: &AppHandle) -> Result<Menu<Wry>, Box<dyn std::error::Error>> {
     // File Menu

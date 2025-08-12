@@ -290,13 +290,16 @@ impl ExportService {
         let docx_content = self.build_docx_content(&content, &options)?;
         
         // Write DOCX file
-        let file_size = fs::write(&options.output_path, docx_content)
+        fs::write(&options.output_path, &docx_content)
             .map_err(|e| anyhow!("Failed to write DOCX file: {}", e))?;
+        let file_size = fs::metadata(&options.output_path)
+            .map_err(|e| anyhow!("Failed to get file metadata: {}", e))?
+            .len();
 
         Ok(ExportResult {
             success: true,
             output_path: Some(options.output_path.clone()),
-            file_size: Some(file_size as u64),
+            file_size: Some(file_size),
             page_count: Some(self.estimate_page_count(&content)),
             word_count: content.metadata.word_count,
             errors,

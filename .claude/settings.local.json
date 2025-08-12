@@ -14,7 +14,8 @@
       "Bash(node:*)",
       "Bash(npm start:*)",
       "Bash(npm create:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

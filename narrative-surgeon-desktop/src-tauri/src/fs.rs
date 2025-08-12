@@ -2,7 +2,6 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tauri::AppHandle;
-use tauri_plugin_fs::FsExt;
 use tauri_plugin_dialog::DialogExt;
 use docx_rs::*;
 use pulldown_cmark::{Parser, html};
@@ -136,97 +135,42 @@ pub async fn import_manuscript_file(app: AppHandle, file_path: String) -> Result
     })
 }
 
-async fn read_text_file(app: &AppHandle, file_path: &str) -> Result<String, String> {
-    let fs = app.fs();
-    
-    match fs.read_text_file(file_path).await {
-        Ok(content) => Ok(content),
-        Err(e) => Err(format!("Failed to read text file: {}", e)),
-    }
+async fn read_text_file(_app: &AppHandle, file_path: &str) -> Result<String, String> {
+    tokio::fs::read_to_string(file_path)
+        .await
+        .map_err(|e| format!("Failed to read text file: {}", e))
 }
 
-async fn read_docx_file(app: &AppHandle, file_path: &str) -> Result<String, String> {
+async fn read_docx_file(_app: &AppHandle, file_path: &str) -> Result<String, String> {
     let file_bytes = tokio::fs::read(file_path)
         .await
         .map_err(|e| format!("Failed to read DOCX file: {}", e))?;
 
-    // Parse DOCX file
     let docx = read_docx(&file_bytes)
         .map_err(|e| format!("Failed to parse DOCX: {}", e))?;
 
-    // Extract text content with basic formatting preservation
     let mut content = String::new();
-    
+
     for document_child in docx.document.children {
-        match document_child {
-            DocumentChild::Paragraph(paragraph) => {
-                let mut para_text = String::new();
-                let mut is_heading = false;
-                
-                // Check if this is a heading
-                if let Some(paragraph_property) = &paragraph.property {
-                    if let Some(style) = &paragraph_property.style {
-                        if style.val.starts_with("Heading") {
-                            is_heading = true;
+        if let DocumentChild::Paragraph(paragraph) = document_child {
+            let mut para_text = String::new();
+
+            for child in paragraph.children {
+                if let ParagraphChild::Run(run) = child {
+                    for run_child in run.children {
+                        match run_child {
+                            RunChild::Text(text) => para_text.push_str(&text.text),
+                            RunChild::Tab(_) => para_text.push('\t'),
+                            RunChild::Break(_) => para_text.push('\n'),
+                            _ => {}
                         }
-                    }
-                }
-                
-                // Extract runs (text with formatting)
-                for child in paragraph.children {
-                    match child {
-                        ParagraphChild::Run(run) => {
-                            let mut run_text = String::new();
-                            let mut is_bold = false;
-                            let mut is_italic = false;
-                            
-                            // Check formatting
-                            if let Some(run_property) = &run.run_property {
-                                is_bold = run_property.bold.is_some();
-                                is_italic = run_property.italic.is_some();
-                            }
-                            
-                            // Extract text from run
-                            for run_child in run.children {
-                                match run_child {
-                                    RunChild::Text(text) => {
-                                        run_text.push_str(&text.text);
-                                    }
-                                    RunChild::Tab(_) => {
-                                        run_text.push('\t');
-                                    }
-                                    RunChild::Break(_) => {
-                                        run_text.push('\n');
-                                    }
-                                    _ => {}
-                                }
-                            }
-                            
-                            // Apply basic HTML formatting for preservation
-                            if is_bold && is_italic {
-                                para_text.push_str(&format!("<strong><em>{}</em></strong>", run_text));
-                            } else if is_bold {
-                                para_text.push_str(&format!("<strong>{}</strong>", run_text));
-                            } else if is_italic {
-                                para_text.push_str(&format!("<em>{}</em>", run_text));
-                            } else {
-                                para_text.push_str(&run_text);
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                
-                // Add paragraph with appropriate formatting
-                if !para_text.trim().is_empty() {
-                    if is_heading {
-                        content.push_str(&format!("<h2>{}</h2>\n\n", para_text.trim()));
-                    } else {
-                        content.push_str(&format!("<p>{}</p>\n\n", para_text.trim()));
                     }
                 }
             }
-            _ => {}
+
+            if !para_text.trim().is_empty() {
+                content.push_str(&format!("<p>{}</p>\n\n", para_text.trim()));
+            }
         }
     }
 
@@ -545,8 +489,7 @@ async fn export_as_docx(content: &str, file_path: &str) -> Result<(), String> {
     }
     
     // Write to file
-    let docx_bytes = docx.build()
-        .map_err(|e| format!("Failed to build DOCX: {}", e))?;
+    let docx_bytes = docx.build();
     
     tokio::fs::write(file_path, &docx_bytes)
         .await
@@ -571,7 +514,8 @@ fn html_to_plain_text(html: &str) -> String {
 
 #[tauri::command]
 pub async fn open_file_dialog(app: AppHandle) -> Result<Option<String>, String> {
-    let file_path = app.dialog()
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog()
         .file()
         .add_filter("Manuscript Files", &["txt", "docx", "doc", "rtf", "md", "markdown"])
         .add_filter("Text Files", &["txt"])
@@ -580,16 +524,17 @@ pub async fn open_file_dialog(app: AppHandle) -> Result<Option<String>, String> 
         .add_filter("Markdown", &["md", "markdown"])
         .add_filter("All Files", &["*"])
         .set_title("Import Manuscript")
-        .pick_file()
-        .await
-        .map_err(|e| format!("Failed to open file dialog: {}", e))?;
+        .pick_file(move |p| {
+            let _ = tx.send(p.map(|path| path.to_path_buf()));
+        });
 
-    Ok(file_path.map(|p| p.to_string_lossy().to_string()))
+    let selected = rx.await.map_err(|e| format!("Dialog channel error: {}", e))?;
+    Ok(selected.map(|p| p.to_string_lossy().to_string()))
 }
 
 #[tauri::command]
 pub async fn save_file_dialog(
-    app: AppHandle, 
+    app: AppHandle,
     default_name: String,
     format: String
 ) -> Result<Option<String>, String> {
@@ -597,68 +542,74 @@ pub async fn save_file_dialog(
     
     // Set appropriate filter based on format
     match format.as_str() {
-        "txt" => dialog = dialog.add_filter("Text Files", &["txt"]),
-        "docx" => dialog = dialog.add_filter("Word Documents", &["docx"]),
-        "md" | "markdown" => dialog = dialog.add_filter("Markdown Files", &["md"]),
-        "html" => dialog = dialog.add_filter("HTML Files", &["html"]),
-        _ => dialog = dialog.add_filter("All Files", &["*"]),
+        "txt" => { dialog = dialog.add_filter("Text Files", &["txt"]); }
+        "docx" => { dialog = dialog.add_filter("Word Documents", &["docx"]); }
+        "md" | "markdown" => { dialog = dialog.add_filter("Markdown Files", &["md"]); }
+        "html" => { dialog = dialog.add_filter("HTML Files", &["html"]); }
+        _ => { dialog = dialog.add_filter("All Files", &["*"]); }
     }
 
-    let file_path = dialog
+    let (tx, rx) = tokio::sync::oneshot::channel();
+
+    dialog
         .set_title("Export Manuscript")
         .set_file_name(&default_name)
-        .save_file()
-        .await
-        .map_err(|e| format!("Failed to open save dialog: {}", e))?;
+        .save_file(move |p| {
+            let _ = tx.send(p.map(|path| path.to_path_buf()));
+        });
 
-    Ok(file_path.map(|p| p.to_string_lossy().to_string()))
+    let selected = rx.await.map_err(|e| format!("Dialog channel error: {}", e))?;
+    Ok(selected.map(|p| p.to_string_lossy().to_string()))
 }
 
 #[tauri::command]
 pub async fn batch_import_files(app: AppHandle) -> Result<Vec<FileImportResult>, String> {
-    let file_paths = app.dialog()
+    let (tx, rx) = tokio::sync::oneshot::channel();
+
+    app.dialog()
         .file()
         .add_filter("Manuscript Files", &["txt", "docx", "doc", "rtf", "md", "markdown"])
         .set_title("Import Multiple Manuscripts")
-        .pick_files()
-        .await
-        .map_err(|e| format!("Failed to open file dialog: {}", e))?;
+        .pick_files(move |paths| {
+            let _ = tx.send(paths.map(|v| v.into_iter().map(|p| p.to_path_buf()).collect::<Vec<_>>()));
+        });
 
-    if let Some(paths) = file_paths {
-        let mut results = Vec::new();
-        
+    let paths_opt = rx.await.map_err(|e| format!("Dialog channel error: {}", e))?;
+    let mut results = Vec::new();
+
+    if let Some(paths) = paths_opt {
         for path in paths {
             match import_manuscript_file(app.clone(), path.to_string_lossy().to_string()).await {
                 Ok(result) => results.push(result),
                 Err(e) => {
-                    // Log error but continue with other files
                     eprintln!("Failed to import {}: {}", path.display(), e);
                 }
             }
         }
-        
-        Ok(results)
-    } else {
-        Ok(Vec::new())
     }
+
+    Ok(results)
 }
 
 #[tauri::command]
 pub async fn backup_manuscript(
-    app: AppHandle,
+    _app: AppHandle,
     manuscript_id: String,
     content: String,
 ) -> Result<String, String> {
     // Create a timestamped backup file
     let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
     let backup_name = format!("backup_{}_{}.txt", manuscript_id, timestamp);
-    
-    let fs = app.fs();
-    
-    // Save to app data directory
-    let backup_path = format!("backups/{}", backup_name);
-    
-    fs.write_text_file(&backup_path, content)
+
+    // Ensure backup directory exists and write file
+    let backup_dir = "backups";
+    tokio::fs::create_dir_all(backup_dir)
+        .await
+        .map_err(|e| format!("Failed to ensure backup directory: {}", e))?;
+
+    let backup_path = format!("{}/{}", backup_dir, backup_name);
+
+    tokio::fs::write(&backup_path, content)
         .await
         .map_err(|e| format!("Failed to create backup: {}", e))?;
 

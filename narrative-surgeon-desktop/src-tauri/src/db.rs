@@ -224,7 +224,7 @@ pub struct SearchQuery {
 }
 
 // Backup and restore functionality
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackupMetadata {
     pub version: String,
     pub created_at: DateTime<Utc>,
@@ -585,7 +585,10 @@ pub async fn search_content(
         sql.push_str(" LIMIT 50");
     }
     
-    let result = db_service.execute_with_cache(&app, &sql, &params).await?;
+    let result = db_service
+        .execute_with_cache(&app, &sql, &params)
+        .await
+        .map_err(|e| e.to_string())?;
     
     // Log search performance
     let execution_time = start_time.elapsed().as_millis() as i32;
@@ -614,10 +617,22 @@ pub async fn create_database_backup(
     let start_time = std::time::Instant::now();
     
     // Get all data
-    let manuscripts_result = db_service.execute_with_cache(&app, "SELECT * FROM manuscripts", &[]).await?;
-    let scenes_result = db_service.execute_with_cache(&app, "SELECT * FROM scenes", &[]).await?;
-    let characters_result = db_service.execute_with_cache(&app, "SELECT * FROM characters", &[]).await?;
-    let notes_result = db_service.execute_with_cache(&app, "SELECT * FROM revision_notes", &[]).await?;
+    let manuscripts_result = db_service
+        .execute_with_cache(&app, "SELECT * FROM manuscripts", &[])
+        .await
+        .map_err(|e| e.to_string())?;
+    let scenes_result = db_service
+        .execute_with_cache(&app, "SELECT * FROM scenes", &[])
+        .await
+        .map_err(|e| e.to_string())?;
+    let characters_result = db_service
+        .execute_with_cache(&app, "SELECT * FROM characters", &[])
+        .await
+        .map_err(|e| e.to_string())?;
+    let notes_result = db_service
+        .execute_with_cache(&app, "SELECT * FROM revision_notes", &[])
+        .await
+        .map_err(|e| e.to_string())?;
     
     // Create backup metadata
     let metadata = BackupMetadata {
@@ -676,7 +691,10 @@ async fn log_performance_metric(
         now.to_string(),
     ];
     
-    db_service.execute_with_cache(app, sql, &params).await?;
+    db_service
+        .execute_with_cache(app, sql, &params)
+        .await
+        .map_err(|e| e.to_string())?;
     
     Ok(())
 }

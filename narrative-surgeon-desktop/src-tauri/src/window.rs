@@ -36,8 +36,8 @@ pub async fn open_comparison_window(
     let window_label = format!("comparison_{}_{}", scene1_id, scene2_id);
     
     // Check if window already exists
-    if app_handle.get_window(&window_label).is_some() {
-        if let Some(window) = app_handle.get_window(&window_label) {
+    if app_handle.get_webview_window(&window_label).is_some() {
+        if let Some(window) = app_handle.get_webview_window(&window_label) {
             window.set_focus().map_err(|e| e.to_string())?;
             return Ok(());
         }
@@ -78,8 +78,8 @@ pub async fn open_floating_notes(app_handle: AppHandle) -> Result<(), String> {
     let window_label = "floating_notes";
     
     // Check if window already exists
-    if app_handle.get_window(window_label).is_some() {
-        if let Some(window) = app_handle.get_window(window_label) {
+    if app_handle.get_webview_window(window_label).is_some() {
+        if let Some(window) = app_handle.get_webview_window(window_label) {
             window.set_focus().map_err(|e| e.to_string())?;
             return Ok(());
         }
@@ -128,8 +128,8 @@ pub async fn open_distraction_free_mode(app_handle: AppHandle) -> Result<(), Str
     let window_label = "distraction_free";
     
     // Check if window already exists
-    if app_handle.get_window(window_label).is_some() {
-        if let Some(window) = app_handle.get_window(window_label) {
+    if app_handle.get_webview_window(window_label).is_some() {
+        if let Some(window) = app_handle.get_webview_window(window_label) {
             window.set_focus().map_err(|e| e.to_string())?;
             return Ok(());
         }
@@ -164,7 +164,7 @@ pub async fn open_distraction_free_mode(app_handle: AppHandle) -> Result<(), Str
 
 #[tauri::command]
 pub async fn close_window(app_handle: AppHandle, window_label: String) -> Result<(), String> {
-    if let Some(window) = app_handle.get_window(&window_label) {
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
         window.close().map_err(|e| e.to_string())?;
     }
     Ok(())
@@ -172,7 +172,7 @@ pub async fn close_window(app_handle: AppHandle, window_label: String) -> Result
 
 #[tauri::command]
 pub async fn minimize_window(app_handle: AppHandle, window_label: String) -> Result<(), String> {
-    if let Some(window) = app_handle.get_window(&window_label) {
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
         window.minimize().map_err(|e| e.to_string())?;
     }
     Ok(())
@@ -180,7 +180,7 @@ pub async fn minimize_window(app_handle: AppHandle, window_label: String) -> Res
 
 #[tauri::command]
 pub async fn maximize_window(app_handle: AppHandle, window_label: String) -> Result<(), String> {
-    if let Some(window) = app_handle.get_window(&window_label) {
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
         window.maximize().map_err(|e| e.to_string())?;
     }
     Ok(())
@@ -191,7 +191,7 @@ pub async fn toggle_always_on_top(
     app_handle: AppHandle,
     window_label: String,
 ) -> Result<bool, String> {
-    if let Some(window) = app_handle.get_window(&window_label) {
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
         let current_state = window.is_always_on_top().map_err(|e| e.to_string())?;
         let new_state = !current_state;
         window.set_always_on_top(new_state).map_err(|e| e.to_string())?;
@@ -208,7 +208,7 @@ pub async fn set_window_position(
     x: f64,
     y: f64,
 ) -> Result<(), String> {
-    if let Some(window) = app_handle.get_window(&window_label) {
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
         window.set_position(tauri::Position::Physical(tauri::PhysicalPosition { x: x as i32, y: y as i32 }))
             .map_err(|e| e.to_string())?;
     }
@@ -222,7 +222,7 @@ pub async fn set_window_size(
     width: f64,
     height: f64,
 ) -> Result<(), String> {
-    if let Some(window) = app_handle.get_window(&window_label) {
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
         window.set_size(tauri::Size::Physical(tauri::PhysicalSize { width: width as u32, height: height as u32 }))
             .map_err(|e| e.to_string())?;
     }
@@ -234,7 +234,7 @@ pub async fn get_window_info(
     app_handle: AppHandle,
     window_label: String,
 ) -> Result<HashMap<String, serde_json::Value>, String> {
-    if let Some(window) = app_handle.get_window(&window_label) {
+    if let Some(window) = app_handle.get_webview_window(&window_label) {
         let mut info = HashMap::new();
         
         if let Ok(position) = window.outer_position() {

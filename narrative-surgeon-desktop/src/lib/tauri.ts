@@ -1,0 +1,60 @@
+import { invoke } from '@tauri-apps/api/core'
+import type { Manuscript, Scene, ManuscriptSummary, AnalysisResult, QueryLetter, ImportResult, ExportFormat } from '../types'
+
+export class TauriAPI {
+  // Database Operations
+  static async createManuscript(title: string, content: string): Promise<{ id: string }> {
+    return await invoke('create_manuscript_safe', { title, text: content })
+  }
+
+  static async loadManuscripts(): Promise<ManuscriptSummary[]> {
+    const result = await invoke('get_manuscripts_safe')
+    return Array.isArray(result) ? result : []
+  }
+
+  static async deleteManuscript(id: string): Promise<{ success: boolean }> {
+    return await invoke('delete_manuscript_safe', { manuscriptId: id })
+  }
+
+  // Scene Management
+  static async getScenes(manuscriptId: string): Promise<Scene[]> {
+    const result = await invoke('get_scenes_safe', { manuscriptId })
+    return Array.isArray(result) ? result : []
+  }
+
+  static async updateScene(id: string, updates: Partial<Scene>): Promise<{ success: boolean }> {
+    return await invoke('update_scene_safe', { sceneId: id, updates })
+  }
+
+  // File Operations
+  static async importFile(path: string): Promise<ImportResult> {
+    return await invoke('import_file', { path })
+  }
+
+  static async batchImportFiles(): Promise<ImportResult[]> {
+    return await invoke('batch_import_files')
+  }
+
+  static async exportManuscript(
+    id: string, 
+    format: ExportFormat, 
+    path: string
+  ): Promise<{ success: boolean }> {
+    return await invoke('export_manuscript', { id, format, path })
+  }
+
+  // Error Handling
+  static async getRecentErrors(limit?: number): Promise<any[]> {
+    return await invoke('get_recent_errors', { limit })
+  }
+
+  // Utility method for handling Tauri command errors
+  static async safeInvoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+    try {
+      return await invoke(command, args)
+    } catch (error) {
+      console.error(`Tauri command ${command} failed:`, error)
+      throw error
+    }
+  }
+}
