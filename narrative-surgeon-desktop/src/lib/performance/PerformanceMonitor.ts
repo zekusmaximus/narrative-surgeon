@@ -480,8 +480,8 @@ class PerformanceMonitor {
   private handleNavigationEntry(entry: PerformanceNavigationTiming): void {
     if (this.config.enableLogging) {
       console.log('Navigation timing:', {
-        loadTime: entry.loadEventEnd - entry.navigationStart,
-        domReady: entry.domContentLoadedEventEnd - entry.navigationStart
+        loadTime: entry.loadEventEnd - entry.startTime,
+        domReady: entry.domContentLoadedEventEnd - entry.startTime
       })
     }
   }

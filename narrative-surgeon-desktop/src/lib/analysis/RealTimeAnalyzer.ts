@@ -42,7 +42,7 @@ class RealTimeAnalyzer {
   private lastAnalysis: Map<string, { content: string; timestamp: number }> = new Map()
 
   // Debounce settings
-  private readonly TYPING_DEBOUNCE = 500 // ms
+  private readonly _TYPING_DEBOUNCE = 500 // ms
   private readonly ANALYSIS_DEBOUNCE = 2000 // ms
   private readonly MIN_CONTENT_LENGTH = 50 // characters
 
@@ -120,7 +120,7 @@ class RealTimeAnalyzer {
   }
 
   private async analyzeGrammarAndStyle(text: string): Promise<AnalysisResult> {
-    const prompt = `Analyze this text for grammar, style, and clarity issues. Be concise and specific:
+    const _prompt = `Analyze this text for grammar, style, and clarity issues. Be concise and specific:
 
 ${text}
 
@@ -141,7 +141,7 @@ Provide feedback in JSON format:
   }
 
   private async analyzeCharacterVoice(text: string): Promise<AnalysisResult> {
-    const prompt = `Analyze character dialogue and narrative voice in this text:
+    const _prompt = `Analyze character dialogue and narrative voice in this text:
 
 ${text}
 
@@ -154,7 +154,7 @@ Look for:
   }
 
   private async analyzePacing(text: string): Promise<AnalysisResult> {
-    const prompt = `Analyze the pacing of this text segment:
+    const _prompt = `Analyze the pacing of this text segment:
 
 ${text}
 
@@ -180,7 +180,7 @@ Look for:
       }
     }
 
-    const prompt = `Analyze the dialogue in this text:
+    const _prompt = `Analyze the dialogue in this text:
 
 ${text}
 
@@ -195,7 +195,7 @@ Check for:
 
   private consolidateAnalysisResults(
     analyses: PromiseSettledResult<AnalysisResult>[],
-    contextStart: number
+    _contextStart: number
   ): any {
     const consolidated = {
       suggestions: [] as any[],
@@ -355,7 +355,7 @@ Check for:
     }
 
     try {
-      const prompt = `Complete this text naturally. Provide ${maxSuggestions} different completions:
+      const _prompt = `Complete this text naturally. Provide ${maxSuggestions} different completions:
 
 ${context}
 
@@ -429,7 +429,7 @@ Continue with just the next few words (2-10 words maximum per completion).`
     if (pattern.pausePatterns.length === 0) return 100
     
     const avgPause = pattern.pausePatterns.reduce((a, b) => a + b) / pattern.pausePatterns.length
-    const maxPause = Math.max(...pattern.pausePatterns)
+    const _maxPause = Math.max(...pattern.pausePatterns)
     
     // Lower variance in pauses = higher focus
     const variance = pattern.pausePatterns.reduce((acc, pause) => {

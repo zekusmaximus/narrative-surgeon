@@ -20,7 +20,7 @@ interface MenuBarProps {
 }
 
 export function MenuBar({ className }: MenuBarProps) {
-  const { createManuscript, deleteManuscript, activeManuscript } = useAppStore()
+  const { createManuscript, activeManuscript } = useAppStore()
 
   const handleNewManuscript = () => {
     createManuscript('New Manuscript', 'Start writing here...')

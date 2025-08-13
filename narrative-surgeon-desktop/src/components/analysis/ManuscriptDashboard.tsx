@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { 
-  BarChart3, 
+ 
   TrendingUp, 
   Users, 
   BookOpen, 
@@ -18,7 +18,6 @@ import {
   Zap
 } from 'lucide-react'
 import { fullManuscriptAnalyzer } from '@/lib/analysis/FullManuscriptAnalyzer'
-import { backgroundProcessor } from '@/lib/backgroundProcessor'
 import type { ManuscriptAnalysisReport } from '@/lib/analysis/FullManuscriptAnalyzer'
 
 interface ManuscriptDashboardProps {

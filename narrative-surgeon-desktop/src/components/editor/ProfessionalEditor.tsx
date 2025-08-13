@@ -35,18 +35,15 @@ interface ProfessionalEditorProps {
   sceneId?: string
 }
 
-export function ProfessionalEditor({ manuscriptId, sceneId }: ProfessionalEditorProps) {
+export function ProfessionalEditor({ manuscriptId }: ProfessionalEditorProps) {
   const editorRef = useRef<EditorRef>(null)
   const [selectedText, setSelectedText] = useState('')
   const [showFindReplace, setShowFindReplace] = useState(false)
 
   const {
-    activeManuscript,
-    scenes,
     activeSceneId,
     editorContent,
     setEditorContent,
-    setActiveScene,
     saveCurrentScene,
     editorSettings,
     loading,
@@ -177,9 +174,6 @@ export function ProfessionalEditor({ manuscriptId, sceneId }: ProfessionalEditor
                   ${editorSettings.focusMode ? 'focus-mode' : ''}
                   ${editorSettings.typewriterMode ? 'typewriter-mode' : ''}
                 `}
-                style={{
-                  fontSize: `${editorSettings.fontSize}px`,
-                }}
               />
             </div>
           </ContextMenuTrigger>

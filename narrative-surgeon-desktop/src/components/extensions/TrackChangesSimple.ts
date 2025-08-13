@@ -1,6 +1,4 @@
-import { Extension } from '@tiptap/core';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
-import { Decoration, DecorationSet } from '@tiptap/pm/view';
+import { Extension, Commands } from '@tiptap/core';
 
 interface TrackChangesOptions {
   enabled: boolean;
@@ -18,23 +16,18 @@ interface ChangeInfo {
 export const TrackChangesSimple = Extension.create<TrackChangesOptions>({
   name: 'trackChangesSimple',
 
-  addOptions() {
-    return {
-      enabled: false,
-    };
-  },
 
   addCommands() {
     return {
-      toggleTrackChanges: () => () => {
-        return true;
+      toggleTrackChanges: () => ({ commands }: { commands: Commands<any> }) => {
+        return commands.toggleNode('trackChangesSimple', 'paragraph');
       },
     };
   },
 
   addKeyboardShortcuts() {
     return {
-      'Mod-Shift-t': () => this.editor.commands.toggleTrackChanges(),
+  'Mod-Shift-t': () => (this.editor.commands as any).toggleTrackChanges(),
     };
   },
 });

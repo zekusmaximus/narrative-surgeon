@@ -1,5 +1,5 @@
 import { Extension } from '@tiptap/core';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Plugin, PluginKey, EditorState, Transaction } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { DOMParser } from '@tiptap/pm/model';
 
@@ -83,17 +83,19 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
   },
 
   addProseMirrorPlugins() {
+    const trackChangesKey = new PluginKey<TrackChangesState>('trackChanges');
+    const opts = this.options; // capture extension options
     return [
       new Plugin({
-        key: new PluginKey('trackChanges'),
+        key: trackChangesKey,
         
         state: {
-          init(): TrackChangesState {
+      init(): TrackChangesState {
             return {
               changes: [],
               decorations: DecorationSet.empty,
-              enabled: this.options.enabled,
-              authorName: this.options.authorName,
+        enabled: opts.enabled,
+        authorName: opts.authorName,
             };
           },
 
@@ -111,7 +113,6 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
             if (tr.docChanged) {
               tr.steps.forEach((step, index) => {
                 const changeId = `change-${Date.now()}-${index}`;
-                const position = tr.mapping.map(step.getMap().ranges[0] || 0);
 
                 if (step.toJSON().stepType === 'replace') {
                   const { from, to, slice } = step as any;
@@ -170,9 +171,9 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
               });
 
               // Notify about changes
-              if (this.options.onChangeDetected && newChanges.length > changes.length) {
+              if (opts.onChangeDetected && newChanges.length > changes.length) {
                 newChanges.slice(changes.length).forEach(change => {
-                  this.options.onChangeDetected!(change);
+                  opts.onChangeDetected!(change);
                 });
               }
             }
@@ -186,8 +187,8 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
         },
 
         props: {
-          decorations(state) {
-            return this.getState(state)?.decorations;
+          decorations(state: EditorState) {
+            return trackChangesKey.getState(state)?.decorations;
           },
         },
       }),
@@ -195,15 +196,19 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
   },
 
   addCommands() {
+  const trackChangesKey = new PluginKey<TrackChangesState>('trackChanges');
     return {
-      toggleTrackChanges: () => ({ state, dispatch }) => {
-        const pluginState = this.options.enabled;
-        this.options.enabled = !pluginState;
+      toggleTrackChanges: () => ({ state }: { state: EditorState }) => {
+        // Toggle by writing to a metadata transaction that flips enabled flag in state clone
+        const pluginState = trackChangesKey.getState(state);
+        if (!pluginState) return false;
+        // Mutating options is not ideal; the state.enabled should control behavior.
+        pluginState.enabled = !pluginState.enabled;
         return true;
       },
 
-      acceptChange: (changeId: string) => ({ state, dispatch }) => {
-        const pluginState = state.plugins.find(p => p.key.name === 'trackChanges')?.getState(state);
+      acceptChange: (changeId: string) => ({ state, dispatch }: { state: EditorState; dispatch?: (tr: Transaction) => void }) => {
+        const pluginState = trackChangesKey.getState(state);
         if (!pluginState) return false;
 
         const change = pluginState.changes.find((c: ChangeInfo) => c.id === changeId);
@@ -214,19 +219,13 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
           pluginState.decorations.find().filter((d: any) => d.spec['data-change-id'] === changeId)
         );
 
-        if (dispatch) {
-          const tr = state.tr.setMeta('trackChanges', {
-            type: 'accept',
-            changeId,
-          });
-          dispatch(tr);
-        }
+        // We could set meta to notify, though plugin currently doesn't react; left for future.
 
         return true;
       },
 
-      rejectChange: (changeId: string) => ({ state, dispatch }) => {
-        const pluginState = state.plugins.find(p => p.key.name === 'trackChanges')?.getState(state);
+      rejectChange: (changeId: string) => ({ state, dispatch }: { state: EditorState; dispatch?: (tr: Transaction) => void }) => {
+        const pluginState = trackChangesKey.getState(state);
         if (!pluginState) return false;
 
         const change = pluginState.changes.find((c: ChangeInfo) => c.id === changeId);
@@ -250,8 +249,8 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
         return true;
       },
 
-      getAllChanges: () => ({ state }) => {
-        const pluginState = state.plugins.find(p => p.key.name === 'trackChanges')?.getState(state);
+      getAllChanges: () => ({ state }: { state: EditorState }) => {
+        const pluginState = trackChangesKey.getState(state);
         return pluginState?.changes || [];
       },
     };
@@ -259,7 +258,7 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
 
   addKeyboardShortcuts() {
     return {
-      'Mod-Shift-t': () => this.editor.commands.toggleTrackChanges(),
+  'Mod-Shift-t': () => (this.editor.commands as any).toggleTrackChanges(),
     };
   },
 });

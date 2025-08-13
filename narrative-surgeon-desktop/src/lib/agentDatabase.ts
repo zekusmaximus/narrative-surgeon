@@ -127,7 +127,6 @@ export interface Manuscript {
 
 class AgentMatcher {
   private agents: AgentProfile[] = []
-  private lastUpdated: number = 0
   
   constructor() {
     this.loadAgentDatabase()
@@ -566,7 +565,6 @@ class AgentMatcher {
   private loadAgentDatabase(): void {
     // In a real implementation, this would load from API or local storage
     this.agents = this.getSampleAgents()
-    this.lastUpdated = Date.now()
   }
 
   updateAgent(agent: AgentProfile): void {

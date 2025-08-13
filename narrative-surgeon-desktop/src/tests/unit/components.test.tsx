@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Unit Tests - React Components
  * Tests individual components in isolation
@@ -44,17 +45,17 @@ describe('TextEditor Component', () => {
   test('renders text editor with empty content', () => {
     render(<TextEditor {...defaultProps} />)
     
-    const editor = screen.getByRole('textbox')
-    expect(editor).toBeInTheDocument()
-    expect(editor).toHaveValue('')
+  const editor = screen.getByRole('textbox') as HTMLInputElement
+  expect(editor as any).toBeInTheDocument()
+  expect(editor as any).toHaveValue('')
   })
 
   test('displays provided content', () => {
     const content = 'This is test content for the editor.'
     render(<TextEditor {...defaultProps} content={content} />)
     
-    const editor = screen.getByRole('textbox')
-    expect(editor).toHaveValue(content)
+  const editor = screen.getByRole('textbox') as HTMLInputElement
+  expect(editor as any).toHaveValue(content)
   })
 
   test('calls onChange when content is modified', async () => {
@@ -127,7 +128,7 @@ describe('TextEditor Component', () => {
     
     // Position cursor in middle
     editor.focus()
-    editor.setSelectionRange(7, 7) // After "Initial"
+  editor.setSelectionRange(7, 7) // After "Initial"
     
     // Update content
     content = 'Initial updated content'

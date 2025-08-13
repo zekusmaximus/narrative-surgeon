@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useAppStore } from '../../../lib/store'
-import { TauriAPI } from '../../../lib/tauri'
 import { Card } from '../../../components/ui/card'
 import { Button } from '../../../components/ui/button'
 import { WritingStats } from '../../../components/WritingStats'
@@ -16,6 +15,7 @@ export default function ManuscriptOverview() {
   const manuscriptId = params.id as string
   const { scenes, loadScenes, loading, setLoading } = useAppStore()
   const [manuscript, setManuscript] = useState<any>(null)
+  const [currentScene, setCurrentScene] = useState<any>(null)
 
   useEffect(() => {
     const loadManuscriptData = async () => {
@@ -137,7 +137,13 @@ export default function ManuscriptOverview() {
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Writing Statistics</h2>
-            <WritingStats />
+            <WritingStats 
+              currentWordCount={currentScene?.word_count || 0}
+              currentCharacterCount={currentScene?.character_count || 0}
+              totalWordCount={totalWords}
+              scenes={scenes}
+              targetWordCount={80000}
+            />
           </Card>
 
           <Card className="p-6">
@@ -152,7 +158,29 @@ export default function ManuscriptOverview() {
         <div className="space-y-6">
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Document Outline</h2>
-            <DocumentOutline />
+            <DocumentOutline 
+              scenes={scenes}
+              activeSceneId={currentScene?.id}
+              onSceneSelect={(scene) => setCurrentScene(scene)}
+              onScenesReorder={(newOrder) => {
+                // TODO: Implement scene reordering
+                console.log('Reorder scenes:', newOrder)
+              }}
+              onSceneCreate={(afterSceneId) => {
+                // TODO: Implement scene creation
+                console.log('Create scene after:', afterSceneId)
+              }}
+              onSceneDelete={(sceneId) => {
+                // TODO: Implement scene deletion
+                console.log('Delete scene:', sceneId)
+              }}
+              onSceneRename={(sceneId, newTitle) => {
+                // TODO: Implement scene renaming
+                console.log('Rename scene:', sceneId, newTitle)
+              }}
+              manuscriptWordCount={totalWords}
+              targetWordCount={80000}
+            />
           </Card>
 
           <Card className="p-6">

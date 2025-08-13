@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation'
 import { Card } from '../../../../components/ui/card'
 import { Button } from '../../../../components/ui/button'
-import { ArrowLeft, Send, FileText, Target, Calendar } from 'lucide-react'
+import { Send, FileText, Target, Calendar } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SubmissionsPage() {

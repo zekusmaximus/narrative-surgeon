@@ -1,6 +1,6 @@
 'use client'
 
-import { analysisCache, chunkCache } from './cache'
+import { analysisCache } from './cache'
 import { llmManager } from './llmProvider'
 import type { AnalysisResult, AnalysisTask } from './llmProvider'
 
@@ -29,7 +29,7 @@ class BackgroundProcessor {
   private taskQueue: ProcessingTask[] = []
   private activeTasks: Map<string, ProcessingTask> = new Map()
   private maxWorkers: number = 4
-  private isInitialized: boolean = false
+  private _isInitialized: boolean = false
 
   constructor() {
     this.initializeWorkers()
@@ -53,12 +53,12 @@ class BackgroundProcessor {
       }
     }
 
-    this.isInitialized = true
+    this._isInitialized = true
     console.log(`Initialized ${this.workers.length} analysis workers`)
   }
 
   private handleWorkerMessage(event: MessageEvent<WorkerMessage>): void {
-    const { type, taskId, data, progress, result, error } = event.data
+    const { type, taskId, progress, result, error } = event.data
     const task = this.activeTasks.get(taskId)
 
     if (!task) return
@@ -131,7 +131,7 @@ class BackgroundProcessor {
     if (this.taskQueue.length === 0) return
 
     // Find available worker
-    const availableWorkers = this.workers.filter(worker => 
+    const availableWorkers = this.workers.filter(_worker =>
       !Array.from(this.activeTasks.values()).some(task => 
         task.status === 'processing'
       )
@@ -258,7 +258,7 @@ class BackgroundProcessor {
   }
 
   // Cache intermediate results for large manuscript processing
-  private cacheIntermediateResults(chunkId: string, result: Partial<AnalysisResult>): void {
+  private _cacheIntermediateResults(chunkId: string, result: Partial<AnalysisResult>): void {
     analysisCache.storePartialResult(chunkId, result)
   }
 
@@ -325,7 +325,7 @@ class BackgroundProcessor {
     this.taskQueue = []
     this.activeTasks.clear()
 
-    this.isInitialized = false
+    this._isInitialized = false
   }
 
   // Real-time text analysis with debouncing

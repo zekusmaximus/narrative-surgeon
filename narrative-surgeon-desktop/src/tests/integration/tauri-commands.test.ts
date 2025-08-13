@@ -20,8 +20,8 @@ const mockTauriCommands = {
 // Mock the Tauri API
 jest.mock('@tauri-apps/api/tauri', () => ({
   invoke: (command: string, args?: any) => {
-    if (mockTauriCommands[command]) {
-      return mockTauriCommands[command](args)
+    if (mockTauriCommands[command as keyof typeof mockTauriCommands]) {
+      return mockTauriCommands[command as keyof typeof mockTauriCommands](args)
     }
     throw new Error(`Unknown command: ${command}`)
   }
@@ -51,8 +51,8 @@ describe('Tauri Command Integration', () => {
       
       const result = await invoke('get_manuscripts')
       
-      expect(result).toEqual(mockManuscripts)
-      expect(mockTauriCommands.get_manuscripts).toHaveBeenCalledTimes(1)
+      ;(expect(result) as any).toEqual(mockManuscripts)
+      (expect(mockTauriCommands.get_manuscripts) as any).toHaveBeenCalledTimes(1)
     })
 
     test('create_manuscript with valid data succeeds', async () => {
@@ -76,8 +76,8 @@ describe('Tauri Command Integration', () => {
       
       const result = await invoke('create_manuscript', { manuscript: manuscriptData })
       
-      expect(result).toEqual(expectedResult)
-      expect(mockTauriCommands.create_manuscript).toHaveBeenCalledWith({ manuscript: manuscriptData })
+      ;(expect(result) as any).toEqual(expectedResult)
+      (expect(mockTauriCommands.create_manuscript) as any).toHaveBeenCalledWith({ manuscript: manuscriptData })
     })
 
     test('create_manuscript with invalid data fails gracefully', async () => {

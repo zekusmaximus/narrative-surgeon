@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
-import type { Manuscript, Scene, ManuscriptSummary, AnalysisResult, QueryLetter, ImportResult, ExportFormat } from '../types'
+import type { Scene, ManuscriptSummary, ImportResult, ExportFormat } from '../types'
 
 export class TauriAPI {
   // Database Operations

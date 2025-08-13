@@ -4,11 +4,10 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { 
   Lightbulb, 
   CheckCircle, 
-  AlertTriangle, 
+ 
   Users, 
   BookOpen, 
   Zap,
@@ -42,7 +41,6 @@ interface SuggestionGroup {
 export function InlineAssistant({
   editorContent,
   cursorPosition,
-  selectedText,
   manuscriptId,
   isActive,
   onSuggestionApply,
@@ -55,7 +53,7 @@ export function InlineAssistant({
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['grammar', 'style']))
   const [showCompletions, setShowCompletions] = useState(false)
   const [writingInsights, setWritingInsights] = useState<any>(null)
-  const debounceRef = useRef<NodeJS.Timeout>()
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
   // Track writing session
   useEffect(() => {

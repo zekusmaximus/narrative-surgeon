@@ -4,8 +4,6 @@
  */
 
 import { test, expect, Page } from '@playwright/test'
-import { promises as fs } from 'fs'
-import path from 'path'
 
 // Test data
 const SAMPLE_MANUSCRIPT = {
@@ -19,7 +17,7 @@ const SAMPLE_MANUSCRIPT = {
 const LARGE_MANUSCRIPT_SIZE = 100000 // 100k words for performance testing
 
 class TestHelpers {
-  static async createLargeManuscript(page: Page, wordCount: number = LARGE_MANUSCRIPT_SIZE) {
+  static async createLargeManuscript(_page: Page, wordCount: number = LARGE_MANUSCRIPT_SIZE) {
     const words = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit']
     let content = ''
     

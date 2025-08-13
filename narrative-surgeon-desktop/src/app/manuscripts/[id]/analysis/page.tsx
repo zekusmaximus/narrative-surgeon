@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation'
 import { Card } from '../../../../components/ui/card'
 import { Button } from '../../../../components/ui/button'
-import { ArrowLeft, BarChart3, Target, Users, BookOpen } from 'lucide-react'
+import { BarChart3, Target, Users, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 
 export default function AnalysisPage() {

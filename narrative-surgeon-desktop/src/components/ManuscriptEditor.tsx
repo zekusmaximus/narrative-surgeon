@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
+import type { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
@@ -9,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Separator } from './ui/separator';
 import { ExportDialog } from './ExportDialog';
 import { DocumentOutline } from './DocumentOutline';
-import { WritingStats } from './WritingStats';
+import { WritingStats } from '@/components/WritingStats';
 import { TrackChangesSimple } from './extensions/TrackChangesSimple';
 import { 
   SaveIcon, 
@@ -117,7 +118,7 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
         class: 'manuscript-editor prose prose-lg max-w-none focus:outline-none min-h-[500px] px-6 py-4',
       },
     },
-    onUpdate: ({ editor: editorInstance }) => {
+    onUpdate: ({ editor: editorInstance }: { editor: any }) => {
       // Set up auto-save timer (30 seconds)
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
@@ -144,7 +145,7 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
       const firstScene = manuscriptScenes[0];
       setCurrentScene(firstScene);
       if (editor) {
-        editor.commands.setContent(firstScene.rawText || '<p>Start writing here...</p>');
+        (editor.commands as any).setContent(firstScene.rawText || '<p>Start writing here...</p>');
       }
     }
   }, [manuscriptScenes, currentScene, editor]);
@@ -174,7 +175,7 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
   const handleSceneSelect = (scene: Scene) => {
     if (editor) {
       setCurrentScene(scene);
-      editor.commands.setContent(scene.rawText || '<p>Start writing here...</p>');
+  (editor.commands as any).setContent(scene.rawText || '<p>Start writing here...</p>');
     }
   };
 
@@ -210,7 +211,7 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
         } else {
           setCurrentScene(null);
           if (editor) {
-            editor.commands.setContent('<p>No scenes available. Create a new scene to start writing.</p>');
+            (editor.commands as any).setContent('<p>No scenes available. Create a new scene to start writing.</p>');
           }
         }
       }
@@ -264,7 +265,7 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
       isFocusMode: !prev.isFocusMode
     }));
   };
-
+  
   if (!editor) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -355,8 +356,8 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => editor.chain().focus().undo().run()}
-                    disabled={!editor.can().undo()}
+                    onClick={() => (editor.chain() as any).focus().undo().run()}
+                    disabled={!(editor.can() as any).undo()}
                     title="Undo"
                   >
                     <UndoIcon size={16} />
@@ -364,8 +365,8 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => editor.chain().focus().redo().run()}
-                    disabled={!editor.can().redo()}
+                    onClick={() => (editor.chain() as any).focus().redo().run()}
+                    disabled={!(editor.can() as any).redo()}
                     title="Redo"
                   >
                     <RedoIcon size={16} />
@@ -376,7 +377,7 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
                   <Button
                     variant={editor.isActive('bold') ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    onClick={() => (editor.chain() as any).focus().toggleBold().run()}
                     title="Bold"
                   >
                     <BoldIcon size={16} />
@@ -384,7 +385,7 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
                   <Button
                     variant={editor.isActive('italic') ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    onClick={() => (editor.chain() as any).focus().toggleItalic().run()}
                     title="Italic"
                   >
                     <ItalicIcon size={16} />

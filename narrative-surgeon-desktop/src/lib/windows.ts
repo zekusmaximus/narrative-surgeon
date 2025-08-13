@@ -288,7 +288,7 @@ export async function restoreWindowState(state: WindowState): Promise<WebviewWin
     })
 
     // Set position
-    await window.setPosition(state.bounds.x, state.bounds.y)
+    await window.setPosition({ x: state.bounds.x, y: state.bounds.y } as any)
 
     // Restore window state
     if (state.isMinimized) {
@@ -323,7 +323,7 @@ export async function saveSession(): Promise<WindowSession> {
   const windowStates: WindowState[] = []
 
   for (const window of windows) {
-    const state = await saveWindowState(await window.label())
+    const state = await saveWindowState(window.label)
     if (state) {
       windowStates.push(state)
     }

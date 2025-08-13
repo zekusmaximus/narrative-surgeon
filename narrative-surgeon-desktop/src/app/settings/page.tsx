@@ -3,7 +3,6 @@
 import { useAppStore } from '../../lib/store'
 import { Card } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
-import { ArrowLeft, Save } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SettingsPage() {

@@ -2,8 +2,7 @@
 
 import { Card } from '../../../components/ui/card'
 import { Button } from '../../../components/ui/button'
-import { BatchImportDialog } from '../../../components/BatchImportDialog'
-import { ArrowLeft, Upload, FileText, Download } from 'lucide-react'
+import { Upload, FileText, Download } from 'lucide-react'
 import Link from 'next/link'
 
 export default function ImportPage() {
@@ -58,7 +57,10 @@ export default function ImportPage() {
           <p className="text-muted-foreground mb-4">
             Import all documents from a folder
           </p>
-          <BatchImportDialog />
+          <Button className="w-full">
+            <Download className="w-4 h-4 mr-2" />
+            Select Folder
+          </Button>
         </Card>
       </div>
 

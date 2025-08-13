@@ -66,7 +66,6 @@ export function MainLayout({ children }: MainLayoutProps) {
             minSize={leftPanelCollapsed ? 0 : 15}
             maxSize={35}
             collapsible={true}
-            collapsed={leftPanelCollapsed}
             onCollapse={() => setLeftPanelCollapsed(true)}
             onExpand={() => setLeftPanelCollapsed(false)}
           >
@@ -206,7 +205,6 @@ export function MainLayout({ children }: MainLayoutProps) {
             minSize={rightPanelCollapsed ? 0 : 20}
             maxSize={40}
             collapsible={true}
-            collapsed={rightPanelCollapsed}
             onCollapse={() => setRightPanelCollapsed(true)}
             onExpand={() => setRightPanelCollapsed(false)}
           >

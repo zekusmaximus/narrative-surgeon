@@ -3,14 +3,11 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../../lib/store'
 import { ManuscriptsList } from '../../components/ManuscriptsList'
-import { CreateManuscriptDialog } from '../../components/CreateManuscriptDialog'
-import { BatchImportDialog } from '../../components/BatchImportDialog'
 import { Button } from '../../components/ui/button'
 import { Plus, Upload } from 'lucide-react'
 
 export default function ManuscriptsPage() {
   const { 
-    manuscripts, 
     loading, 
     error, 
     loadManuscripts, 
@@ -60,8 +57,14 @@ export default function ManuscriptsPage() {
         </div>
         
         <div className="flex gap-2">
-          <BatchImportDialog />
-          <CreateManuscriptDialog />
+          <Button variant="outline">
+            <Upload className="w-4 h-4 mr-2" />
+            Import Multiple
+          </Button>
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            New Manuscript
+          </Button>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { Extension } from '@tiptap/core';
+import { Extension, type CommandProps } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { findWrapping } from '@tiptap/pm/transform';
@@ -30,52 +30,96 @@ interface FindAndReplaceState {
   replaceAll: boolean;
 }
 
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    findAndReplace: {
-      /**
-       * Start find and replace mode
-       */
-      startFindAndReplace: () => ReturnType;
-      /**
-       * Stop find and replace mode
-       */
-      stopFindAndReplace: () => ReturnType;
-      /**
-       * Set the search term
-       */
-      setSearchTerm: (searchTerm: string) => ReturnType;
-      /**
-       * Set the replace term
-       */
-      setReplaceTerm: (replaceTerm: string) => ReturnType;
-      /**
-       * Find next occurrence
-       */
-      findNext: () => ReturnType;
-      /**
-       * Find previous occurrence
-       */
-      findPrevious: () => ReturnType;
-      /**
-       * Replace current occurrence
-       */
-      replace: () => ReturnType;
-      /**
-       * Replace all occurrences
-       */
-      replaceAll: () => ReturnType;
-      /**
-       * Toggle case sensitivity
-       */
-      toggleCaseSensitive: () => ReturnType;
-      /**
-       * Toggle regex mode
-       */
-      toggleRegex: () => ReturnType;
-    };
-  }
+// Command augmentation centralized in ambient.d.ts
+
+function textOffsetToPos(doc: any, offset: number): number | null {
+  let pos: number | null = null;
+  let currentOffset = 0;
+
+  doc.descendants((node: any, nodePos: number) => {
+    if (node.isText) {
+      if (pos === null && currentOffset + node.textContent.length >= offset) {
+        pos = nodePos + (offset - currentOffset);
+      }
+      currentOffset += node.textContent.length;
+    } else {
+      currentOffset += 1; // for the opening tag
+    }
+    if (pos !== null) {
+      return false; // stop recursing
+    }
+    return;
+  });
+  return pos;
 }
+
+function findMatches(doc: any, searchTerm: string, caseSensitive: boolean, useRegex: boolean): SearchResult[] {
+  if (!searchTerm) return [];
+
+  const results: SearchResult[] = [];
+  const text = doc.textContent;
+  
+  try {
+    if (useRegex) {
+      const flags = caseSensitive ? 'g' : 'gi';
+      const regex = new RegExp(searchTerm, flags);
+      let match;
+      
+      while ((match = regex.exec(text)) !== null) {
+        const pos = textOffsetToPos(doc, match.index);
+        if (pos !== null) {
+          results.push({
+            from: pos,
+            to: pos + match[0].length,
+            match: match[0],
+            index: results.length,
+          });
+        }
+        if (match[0].length === 0) {
+          regex.lastIndex++;
+        }
+      }
+    } else {
+      const searchText = caseSensitive ? searchTerm : searchTerm.toLowerCase();
+      const targetText = caseSensitive ? text : text.toLowerCase();
+      let index = 0;
+      while ((index = targetText.indexOf(searchText, index)) !== -1) {
+        const pos = textOffsetToPos(doc, index);
+        if (pos !== null) {
+          results.push({
+            from: pos,
+            to: pos + searchTerm.length,
+            match: text.substr(index, searchTerm.length),
+            index: results.length,
+          });
+        }
+        index += searchTerm.length;
+      }
+    }
+  } catch (error) {
+    console.warn('Invalid search pattern:', error);
+    return [];
+  }
+
+  return results;
+}
+
+function createDecorations(doc: any, results: SearchResult[], currentIndex: number, options: FindAndReplaceOptions): DecorationSet {
+  const decorations: Decoration[] = results.map((result, index) => {
+    const className = index === currentIndex 
+      ? `${options.searchResultClass} ${options.searchResultActiveClass}`
+      : options.searchResultClass;
+      
+    return Decoration.inline(result.from, result.to, {
+      class: className,
+    });
+  });
+
+  return DecorationSet.create(doc, decorations);
+}
+
+
+const findAndReplaceKey = new PluginKey<FindAndReplaceState>('findAndReplace');
 
 export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
   name: 'findAndReplace',
@@ -103,9 +147,11 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
   },
 
   addProseMirrorPlugins() {
-    return [
+    const self = this;
+    
+  return [
       new Plugin({
-        key: new PluginKey('findAndReplace'),
+        key: findAndReplaceKey,
         
         state: {
           init(): FindAndReplaceState {
@@ -116,8 +162,8 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
               currentIndex: -1,
               decorations: DecorationSet.empty,
               isActive: false,
-              caseSensitive: this.options.caseSensitive || false,
-              useRegex: this.options.useRegex || false,
+              caseSensitive: self.options.caseSensitive,
+              useRegex: self.options.useRegex,
               replaceAll: false,
             };
           },
@@ -126,7 +172,6 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
             let newState = { ...oldState };
             newState.decorations = oldState.decorations.map(tr.mapping, tr.doc);
 
-            // Handle find and replace commands
             const meta = tr.getMeta('findAndReplace');
             if (meta) {
               switch (meta.type) {
@@ -142,25 +187,24 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
                   newState.currentIndex = -1;
                   newState.decorations = DecorationSet.empty;
                   break;
-
                 case 'search':
                   newState.searchTerm = meta.searchTerm;
-                  newState.results = this.findMatches(
+                  newState.results = findMatches(
                     tr.doc,
                     meta.searchTerm,
                     newState.caseSensitive,
                     newState.useRegex
                   );
                   newState.currentIndex = newState.results.length > 0 ? 0 : -1;
-                  newState.decorations = this.createDecorations(
+                  newState.decorations = createDecorations(
                     tr.doc,
                     newState.results,
-                    newState.currentIndex
+                    newState.currentIndex,
+                    self.options
                   );
                   
-                  // Notify parent component of search results
-                  if (this.options.onSearchUpdate) {
-                    this.options.onSearchUpdate(newState.results);
+                  if (self.options.onSearchUpdate) {
+                    self.options.onSearchUpdate(newState.results);
                   }
                   break;
 
@@ -171,10 +215,11 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
                 case 'next':
                   if (newState.results.length > 0) {
                     newState.currentIndex = (newState.currentIndex + 1) % newState.results.length;
-                    newState.decorations = this.createDecorations(
+                    newState.decorations = createDecorations(
                       tr.doc,
                       newState.results,
-                      newState.currentIndex
+                      newState.currentIndex,
+                      self.options
                     );
                   }
                   break;
@@ -184,10 +229,11 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
                     newState.currentIndex = newState.currentIndex <= 0 
                       ? newState.results.length - 1 
                       : newState.currentIndex - 1;
-                    newState.decorations = this.createDecorations(
+                    newState.decorations = createDecorations(
                       tr.doc,
                       newState.results,
-                      newState.currentIndex
+                      newState.currentIndex,
+                      self.options
                     );
                   }
                   break;
@@ -195,17 +241,18 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
                 case 'toggle-case':
                   newState.caseSensitive = !newState.caseSensitive;
                   if (newState.searchTerm) {
-                    newState.results = this.findMatches(
+                    newState.results = findMatches(
                       tr.doc,
                       newState.searchTerm,
                       newState.caseSensitive,
                       newState.useRegex
                     );
                     newState.currentIndex = newState.results.length > 0 ? 0 : -1;
-                    newState.decorations = this.createDecorations(
+                    newState.decorations = createDecorations(
                       tr.doc,
                       newState.results,
-                      newState.currentIndex
+                      newState.currentIndex,
+                      self.options
                     );
                   }
                   break;
@@ -213,17 +260,18 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
                 case 'toggle-regex':
                   newState.useRegex = !newState.useRegex;
                   if (newState.searchTerm) {
-                    newState.results = this.findMatches(
+                    newState.results = findMatches(
                       tr.doc,
                       newState.searchTerm,
                       newState.caseSensitive,
                       newState.useRegex
                     );
                     newState.currentIndex = newState.results.length > 0 ? 0 : -1;
-                    newState.decorations = this.createDecorations(
+                    newState.decorations = createDecorations(
                       tr.doc,
                       newState.results,
-                      newState.currentIndex
+                      newState.currentIndex,
+                      self.options
                     );
                   }
                   break;
@@ -236,105 +284,9 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
 
         props: {
           decorations(state) {
-            return this.getState(state)?.decorations;
+            const pluginState: FindAndReplaceState | undefined = this.getState(state);
+            return pluginState?.decorations;
           },
-        },
-
-        // Helper methods
-        findMatches(doc: any, searchTerm: string, caseSensitive: boolean, useRegex: boolean): SearchResult[] {
-          if (!searchTerm) return [];
-
-          const results: SearchResult[] = [];
-          const text = doc.textContent;
-          
-          try {
-            if (useRegex) {
-              const flags = caseSensitive ? 'g' : 'gi';
-              const regex = new RegExp(searchTerm, flags);
-              let match;
-              
-              while ((match = regex.exec(text)) !== null) {
-                // Find document position for text offset
-                const pos = this.textOffsetToPos(doc, match.index);
-                if (pos !== null) {
-                  results.push({
-                    from: pos,
-                    to: pos + match[0].length,
-                    match: match[0],
-                    index: results.length,
-                  });
-                }
-                
-                // Prevent infinite loop on zero-width matches
-                if (match[0].length === 0) {
-                  regex.lastIndex++;
-                }
-              }
-            } else {
-              const searchText = caseSensitive ? searchTerm : searchTerm.toLowerCase();
-              const targetText = caseSensitive ? text : text.toLowerCase();
-              
-              let index = 0;
-              while ((index = targetText.indexOf(searchText, index)) !== -1) {
-                const pos = this.textOffsetToPos(doc, index);
-                if (pos !== null) {
-                  results.push({
-                    from: pos,
-                    to: pos + searchTerm.length,
-                    match: text.substr(index, searchTerm.length),
-                    index: results.length,
-                  });
-                }
-                index += searchTerm.length;
-              }
-            }
-          } catch (error) {
-            // Invalid regex - return empty results
-            console.warn('Invalid search pattern:', error);
-            return [];
-          }
-
-          return results;
-        },
-
-        textOffsetToPos(doc: any, offset: number): number | null {
-          let pos = 0;
-          let currentOffset = 0;
-
-          const findPos = (node: any, nodePos: number): number | null => {
-            if (node.isText) {
-              if (currentOffset + node.text.length > offset) {
-                return nodePos + (offset - currentOffset);
-              }
-              currentOffset += node.text.length;
-            } else if (node.isLeaf) {
-              // Skip leaf nodes like images
-            } else {
-              for (let i = 0; i < node.content.childCount; i++) {
-                const child = node.content.child(i);
-                const result = findPos(child, nodePos + 1);
-                if (result !== null) return result;
-                nodePos += child.nodeSize;
-              }
-            }
-            return null;
-          };
-
-          return findPos(doc, 0);
-        },
-
-        createDecorations(doc: any, results: SearchResult[], currentIndex: number): DecorationSet {
-          const decorations: Decoration[] = results.map((result, index) => {
-            const className = index === currentIndex 
-              ? `${this.options.searchResultClass} ${this.options.searchResultActiveClass}`
-              : this.options.searchResultClass;
-              
-            return Decoration.inline(result.from, result.to, {
-              class: className,
-            });
-          });
-
-          return DecorationSet.create(doc, decorations);
         },
       }),
     ];
@@ -344,7 +296,7 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
     return {
       startFindAndReplace:
         () =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: CommandProps) => {
           if (dispatch) {
             const tr = state.tr.setMeta('findAndReplace', { type: 'start' });
             dispatch(tr);
@@ -354,7 +306,7 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
 
       stopFindAndReplace:
         () =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: CommandProps) => {
           if (dispatch) {
             const tr = state.tr.setMeta('findAndReplace', { type: 'stop' });
             dispatch(tr);
@@ -364,7 +316,7 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
 
       setSearchTerm:
         (searchTerm: string) =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: CommandProps) => {
           if (dispatch) {
             const tr = state.tr.setMeta('findAndReplace', {
               type: 'search',
@@ -377,7 +329,7 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
 
       setReplaceTerm:
         (replaceTerm: string) =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: CommandProps) => {
           if (dispatch) {
             const tr = state.tr.setMeta('findAndReplace', {
               type: 'replace-term',
@@ -390,7 +342,7 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
 
       findNext:
         () =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: CommandProps) => {
           if (dispatch) {
             const tr = state.tr.setMeta('findAndReplace', { type: 'next' });
             dispatch(tr);
@@ -400,7 +352,7 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
 
       findPrevious:
         () =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: CommandProps) => {
           if (dispatch) {
             const tr = state.tr.setMeta('findAndReplace', { type: 'previous' });
             dispatch(tr);
@@ -410,10 +362,8 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
 
       replace:
         () =>
-        ({ dispatch, state, view }) => {
-          const pluginState = state.plugins
-            .find(p => p.key.name === 'findAndReplace')
-            ?.getState(state);
+        ({ dispatch, state }: CommandProps) => {
+          const pluginState = findAndReplaceKey.getState(state);
           
           if (!pluginState || pluginState.currentIndex === -1) return false;
           
@@ -427,7 +377,6 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
               state.schema.text(pluginState.replaceTerm)
             );
             
-            // Update search after replacement
             tr.setMeta('findAndReplace', {
               type: 'search',
               searchTerm: pluginState.searchTerm,
@@ -441,17 +390,14 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
 
       replaceAll:
         () =>
-        ({ dispatch, state }) => {
-          const pluginState = state.plugins
-            .find(p => p.key.name === 'findAndReplace')
-            ?.getState(state);
+        ({ dispatch, state }: CommandProps) => {
+          const pluginState = findAndReplaceKey.getState(state);
           
           if (!pluginState || pluginState.results.length === 0) return false;
 
           if (dispatch) {
             let tr = state.tr;
             
-            // Replace all occurrences from end to start to maintain positions
             const sortedResults = [...pluginState.results].reverse();
             
             sortedResults.forEach(result => {
@@ -462,7 +408,6 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
               );
             });
             
-            // Clear search after replace all
             tr.setMeta('findAndReplace', { type: 'stop' });
             dispatch(tr);
           }
@@ -472,7 +417,7 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
 
       toggleCaseSensitive:
         () =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: CommandProps) => {
           if (dispatch) {
             const tr = state.tr.setMeta('findAndReplace', { type: 'toggle-case' });
             dispatch(tr);
@@ -482,7 +427,7 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
 
       toggleRegex:
         () =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: CommandProps) => {
           if (dispatch) {
             const tr = state.tr.setMeta('findAndReplace', { type: 'toggle-regex' });
             dispatch(tr);
@@ -494,31 +439,31 @@ export const FindAndReplaceExtension = Extension.create<FindAndReplaceOptions>({
 
   addKeyboardShortcuts() {
     return {
-      'Mod-f': () => this.editor.commands.startFindAndReplace(),
-      'Mod-h': () => this.editor.commands.startFindAndReplace(),
-      'Escape': () => this.editor.commands.stopFindAndReplace(),
-      'Enter': () => this.editor.commands.findNext(),
-      'Shift-Enter': () => this.editor.commands.findPrevious(),
-      'Mod-Enter': () => this.editor.commands.replace(),
-      'Mod-Shift-Enter': () => this.editor.commands.replaceAll(),
+  'Mod-f': () => (this.editor.commands as any).startFindAndReplace(),
+  'Mod-h': () => (this.editor.commands as any).startFindAndReplace(),
+  'Escape': () => (this.editor.commands as any).stopFindAndReplace(),
+  'Enter': () => (this.editor.commands as any).findNext(),
+  'Shift-Enter': () => (this.editor.commands as any).findPrevious(),
+  'Mod-Enter': () => (this.editor.commands as any).replace(),
+  'Mod-Shift-Enter': () => (this.editor.commands as any).replaceAll(),
     };
   },
 });
 
-// Utility functions to get search state
 export function getSearchResults(editor: any): SearchResult[] {
-  const plugin = editor.state.plugins.find((p: any) => p.key.name === 'findAndReplace');
-  return plugin?.getState(editor.state)?.results || [];
+  const pluginState: FindAndReplaceState | undefined = editor.state.plugins
+    .map((p: Plugin) => (p as any).key === findAndReplaceKey ? findAndReplaceKey.getState(editor.state) : undefined)
+    .find(Boolean);
+  return pluginState?.results || [];
 }
 
 export function getCurrentSearchIndex(editor: any): number {
-  const plugin = editor.state.plugins.find((p: any) => p.key.name === 'findAndReplace');
-  return plugin?.getState(editor.state)?.currentIndex || -1;
+  const state = findAndReplaceKey.getState(editor.state) as FindAndReplaceState | undefined;
+  return state?.currentIndex ?? -1;
 }
 
 export function isSearchActive(editor: any): boolean {
-  const plugin = editor.state.plugins.find((p: any) => p.key.name === 'findAndReplace');
-  return plugin?.getState(editor.state)?.isActive || false;
+  return !!findAndReplaceKey.getState(editor.state)?.isActive;
 }
 
 export type { SearchResult, FindAndReplaceOptions };

@@ -7,7 +7,6 @@ import { CreateManuscriptDialog } from '../components/CreateManuscriptDialog'
 
 export default function Dashboard() {
   const { 
-    manuscripts, 
     loading, 
     error, 
     loadManuscripts, 
@@ -67,6 +66,7 @@ export default function Dashboard() {
       />
 
       <CreateManuscriptDialog 
+        onClose={() => {}}
         onManuscriptCreated={(manuscript) => {
           // Navigate to the new manuscript
           window.location.href = `/manuscripts/${manuscript.id}/editor`

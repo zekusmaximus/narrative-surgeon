@@ -21,6 +21,9 @@ export interface Scene {
   title?: string;
   rawText: string;
   wordCount: number;
+  // Back-compat alias properties for legacy snake_case usage
+  raw_text?: string;
+  word_count?: number;
   isOpening: boolean;
   isChapterEnd: boolean;
   opensWithHook: boolean;
@@ -80,3 +83,35 @@ export interface OpeningAnalysis {
   analysisNotes?: string;
   analyzedAt?: number;
 }
+
+/* Additional exports to satisfy desktop code imports */
+export interface ManuscriptSummary {
+  id: string;
+  title: string;
+  wordCount: number;
+  author?: string;
+  genre?: string;
+  updatedAt: number;
+}
+
+export interface AnalysisResult {
+  manuscriptId: string;
+  summary: string;
+  scores?: Record<string, number>;
+  recommendations?: string[];
+}
+
+export interface QueryLetter {
+  manuscriptId: string;
+  content: string;
+  score?: number;
+  suggestions?: string[];
+}
+
+export interface ImportResult {
+  manuscripts: Manuscript[];
+  scenes: Scene[];
+  errors?: string[];
+}
+
+export type ExportFormat = 'markdown' | 'docx' | 'pdf' | 'txt' | string;

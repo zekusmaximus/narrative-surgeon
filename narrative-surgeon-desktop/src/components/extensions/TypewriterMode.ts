@@ -1,5 +1,5 @@
 import { Extension } from '@tiptap/core';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Plugin, PluginKey, EditorState, Transaction } from '@tiptap/pm/state';
 
 interface TypewriterModeOptions {
   enabled: boolean;
@@ -15,28 +15,7 @@ interface TypewriterState {
   animationDuration: number;
 }
 
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    typewriterMode: {
-      /**
-       * Toggle typewriter mode on/off
-       */
-      toggleTypewriterMode: () => ReturnType;
-      /**
-       * Enable typewriter mode
-       */
-      enableTypewriterMode: () => ReturnType;
-      /**
-       * Disable typewriter mode
-       */
-      disableTypewriterMode: () => ReturnType;
-      /**
-       * Set typewriter scroll offset
-       */
-      setTypewriterScrollOffset: (offset: number) => ReturnType;
-    };
-  }
-}
+// Command augmentation centralized in ambient.d.ts
 
 export const TypewriterModeExtension = Extension.create<TypewriterModeOptions>({
   name: 'typewriterMode',
@@ -60,17 +39,19 @@ export const TypewriterModeExtension = Extension.create<TypewriterModeOptions>({
   },
 
   addProseMirrorPlugins() {
+    const typewriterKey = new PluginKey<TypewriterState>('typewriterMode');
+    const opts = this.options;
     return [
       new Plugin({
-        key: new PluginKey('typewriterMode'),
+        key: typewriterKey,
         
         state: {
-          init(): TypewriterState {
+      init(): TypewriterState {
             return {
-              enabled: this.options.enabled || false,
-              scrollOffset: this.options.scrollOffset || 0,
-              smoothScroll: this.options.smoothScroll !== false,
-              animationDuration: this.options.animationDuration || 200,
+        enabled: opts.enabled || false,
+        scrollOffset: opts.scrollOffset || 0,
+        smoothScroll: opts.smoothScroll !== false,
+        animationDuration: opts.animationDuration || 200,
             };
           },
 
@@ -100,12 +81,12 @@ export const TypewriterModeExtension = Extension.create<TypewriterModeOptions>({
           },
         },
 
-        view(editorView) {
+  view(editorView) {
           let scrollTimeout: NodeJS.Timeout | null = null;
           let isScrolling = false;
 
           const scrollToCursor = () => {
-            const state = this.getState(editorView.state);
+            const state = typewriterKey.getState(editorView.state);
             if (!state?.enabled || isScrolling) return;
 
             const { state: editorState } = editorView;
@@ -158,7 +139,7 @@ export const TypewriterModeExtension = Extension.create<TypewriterModeOptions>({
 
           // Listen to selection changes and document updates
           const handleUpdate = () => {
-            const state = this.getState(editorView.state);
+            const state = typewriterKey.getState(editorView.state);
             if (state?.enabled) {
               debouncedScroll();
             }
@@ -166,7 +147,7 @@ export const TypewriterModeExtension = Extension.create<TypewriterModeOptions>({
 
           // Add CSS class to editor when typewriter mode is active
           const updateEditorClass = () => {
-            const state = this.getState(editorView.state);
+            const state = typewriterKey.getState(editorView.state);
             if (state?.enabled) {
               editorView.dom.classList.add('typewriter-mode');
             } else {
@@ -179,8 +160,8 @@ export const TypewriterModeExtension = Extension.create<TypewriterModeOptions>({
 
           return {
             update(view, prevState) {
-              const prevTypewriterState = this.getState(prevState);
-              const currentTypewriterState = this.getState(view.state);
+              const prevTypewriterState = typewriterKey.getState(prevState);
+              const currentTypewriterState = typewriterKey.getState(view.state);
               
               // Update CSS class if mode changed
               if (prevTypewriterState?.enabled !== currentTypewriterState?.enabled) {
@@ -260,7 +241,7 @@ export const TypewriterModeExtension = Extension.create<TypewriterModeOptions>({
     return {
       toggleTypewriterMode:
         () =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: { dispatch: (tr: Transaction) => void; state: EditorState }) => {
           if (dispatch) {
             const tr = state.tr.setMeta('typewriterMode', { type: 'toggle' });
             dispatch(tr);
@@ -270,7 +251,7 @@ export const TypewriterModeExtension = Extension.create<TypewriterModeOptions>({
 
       enableTypewriterMode:
         () =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: { dispatch: (tr: Transaction) => void; state: EditorState }) => {
           if (dispatch) {
             const tr = state.tr.setMeta('typewriterMode', { type: 'enable' });
             dispatch(tr);
@@ -280,7 +261,7 @@ export const TypewriterModeExtension = Extension.create<TypewriterModeOptions>({
 
       disableTypewriterMode:
         () =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: { dispatch: (tr: Transaction) => void; state: EditorState }) => {
           if (dispatch) {
             const tr = state.tr.setMeta('typewriterMode', { type: 'disable' });
             dispatch(tr);
@@ -290,7 +271,7 @@ export const TypewriterModeExtension = Extension.create<TypewriterModeOptions>({
 
       setTypewriterScrollOffset:
         (offset: number) =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: { dispatch: (tr: Transaction) => void; state: EditorState }) => {
           if (dispatch) {
             const tr = state.tr.setMeta('typewriterMode', { 
               type: 'setOffset', 
@@ -305,7 +286,7 @@ export const TypewriterModeExtension = Extension.create<TypewriterModeOptions>({
 
   addKeyboardShortcuts() {
     return {
-      'Mod-Alt-t': () => this.editor.commands.toggleTypewriterMode(),
+  'Mod-Alt-t': () => (this.editor.commands as any).toggleTypewriterMode(),
     };
   },
 

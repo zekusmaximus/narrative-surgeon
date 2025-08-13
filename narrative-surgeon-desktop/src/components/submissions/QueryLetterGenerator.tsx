@@ -7,8 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
 import { 
   FileText, 
@@ -305,7 +303,7 @@ const queryTemplates: { [key: string]: QueryTemplate } = {
   }
 }
 
-export function QueryLetterGenerator({ manuscriptId, className }: { manuscriptId: string; className?: string }) {
+export function QueryLetterGenerator({ className }: { manuscriptId: string; className?: string }) {
   const [selectedTemplate, setSelectedTemplate] = useState<string>('literary')
   const [queryContent, setQueryContent] = useState<{ [key: string]: string }>({})
   const [personalization, setPersonalization] = useState<AgentPersonalization>({
@@ -330,7 +328,7 @@ export function QueryLetterGenerator({ manuscriptId, className }: { manuscriptId
       initialContent[section.id] = queryContent[section.id] || ''
     })
     setQueryContent(initialContent)
-  }, [selectedTemplate])
+  }, [selectedTemplate, template.structure])
 
   useEffect(() => {
     // Analyze query in real-time

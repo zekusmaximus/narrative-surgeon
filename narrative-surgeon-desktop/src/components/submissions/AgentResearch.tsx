@@ -66,13 +66,6 @@ export function AgentResearch({ manuscript, onAgentSelect, className }: AgentRes
     loadAgents()
   }, [])
 
-  useEffect(() => {
-    if (manuscript && viewMode === 'matches') {
-      generateMatches()
-    } else {
-      applyFilters()
-    }
-  }, [agents, filters, manuscript, viewMode])
 
   const loadAgents = async () => {
     setIsLoading(true)
@@ -143,6 +136,15 @@ export function AgentResearch({ manuscript, onAgentSelect, className }: AgentRes
 
     setFilteredAgents(filtered)
   }
+
+  useEffect(() => {
+    if (manuscript && viewMode === 'matches') {
+      generateMatches()
+    } else {
+      applyFilters()
+    }
+  }, [agents, filters, manuscript, viewMode])
+
 
   const toggleFavorite = (agentId: string) => {
     const newFavorites = new Set(favoriteAgents)
@@ -627,7 +629,7 @@ export function AgentResearch({ manuscript, onAgentSelect, className }: AgentRes
             <Checkbox
               id="accepting-queries"
               checked={filters.currently_accepting}
-              onCheckedChange={(checked) => setFilters(prev => ({ ...prev, currently_accepting: checked as boolean }))}
+              onCheckedChange={(checked: boolean) => setFilters(prev => ({ ...prev, currently_accepting: checked }))}
             />
             <label htmlFor="accepting-queries" className="text-sm">
               Only accepting queries

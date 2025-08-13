@@ -283,7 +283,7 @@ export class MarketResearcher {
       .slice(0, 10)
   }
 
-  private assessMarketPosition(genre: string, similarBooks: BookSale[]): CompetitiveAnalysis['market_position'] {
+  private assessMarketPosition(_genre: string, similarBooks: BookSale[]): CompetitiveAnalysis['market_position'] {
     const bookCount = similarBooks.length
     if (bookCount > 20) return 'oversaturated'
     if (bookCount > 10) return 'competitive'
@@ -363,7 +363,7 @@ export class MarketResearcher {
     }
   }
 
-  private async generateRecommendations(options: MarketResearchOptions): Promise<MarketRecommendations> {
+  private async generateRecommendations(_options: MarketResearchOptions): Promise<MarketRecommendations> {
     return {
       positioning_strategy: "Position as literary fiction with commercial appeal",
       target_publishers: ["Knopf", "Scribner", "Little, Brown", "Riverhead"],

@@ -13,14 +13,9 @@ import {
   HardDrive, 
   Zap,
   AlertTriangle,
-  CheckCircle,
-  TrendingUp,
-  TrendingDown,
-  Clock,
   Database,
   Network,
   Monitor,
-  Settings,
   Download,
   Play,
   Pause
@@ -37,7 +32,6 @@ export function PerformanceDashboard({ className, compact = false }: Performance
   const [metricsHistory, setMetricsHistory] = useState<PerformanceMetrics[]>([])
   const [alerts, setAlerts] = useState<PerformanceAlert[]>([])
   const [isMonitoring, setIsMonitoring] = useState(false)
-  const [selectedTimeRange, setSelectedTimeRange] = useState<'5m' | '1h' | '6h' | '24h'>('5m')
 
   useEffect(() => {
     // Initialize monitoring
@@ -100,7 +94,7 @@ export function PerformanceDashboard({ className, compact = false }: Performance
     ))
   }
 
-  const getStatusColor = (value: number, threshold: number) => {
+  const _getStatusColor = (value: number, threshold: number) => {
     if (value >= threshold * 0.9) return 'text-red-500'
     if (value >= threshold * 0.7) return 'text-yellow-500'
     return 'text-green-500'

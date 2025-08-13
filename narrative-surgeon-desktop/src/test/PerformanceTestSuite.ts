@@ -3,8 +3,7 @@
 import { performanceMonitor } from '@/lib/performance/PerformanceMonitor'
 import { fullManuscriptAnalyzer } from '@/lib/analysis/FullManuscriptAnalyzer'
 import { backgroundProcessor } from '@/lib/backgroundProcessor'
-import { analysisCache, manuscriptCache, chunkCache } from '@/lib/cache'
-import { llmManager } from '@/lib/llmProvider'
+import { analysisCache } from '@/lib/cache'
 
 export interface PerformanceTestResult {
   testName: string
@@ -155,7 +154,7 @@ class PerformanceTestSuite {
 
     try {
       // Test full manuscript analysis
-      const analysisResult = await fullManuscriptAnalyzer.analyzeFullManuscript(
+      const _analysisResult = await fullManuscriptAnalyzer.analyzeFullManuscript(
         manuscriptId,
         manuscript,
         (progress) => {

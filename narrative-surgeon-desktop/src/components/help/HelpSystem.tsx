@@ -3,35 +3,30 @@
  * Provides contextual help, tutorials, and user support
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@radix-ui/react-dialog'
 import {
   HelpCircle,
   Search,
   BookOpen,
   Video,
   MessageSquare,
-  Lightbulb,
   Keyboard,
   Settings,
-  FileText,
   Users,
-  Target,
-  BarChart3,
-  Download,
   PlayCircle,
   ExternalLink,
   Star,
   Clock,
   CheckCircle,
   ArrowRight,
-  X
+  X,
 } from 'lucide-react'
 
 interface HelpArticle {
@@ -788,7 +783,7 @@ Query in small batches to test and refine your approach.`,
                 if (paragraph.startsWith('#')) {
                   const level = paragraph.match(/^#+/)?.[0].length || 1
                   const text = paragraph.replace(/^#+\s*/, '')
-                  const HeadingTag = `h${Math.min(level, 6)}` as keyof JSX.IntrinsicElements
+                  const HeadingTag = `h${Math.min(level, 6)}` as keyof React.JSX.IntrinsicElements
                   return React.createElement(HeadingTag, { key: index }, text)
                 }
                 return paragraph ? <p key={index}>{paragraph}</p> : <br key={index} />

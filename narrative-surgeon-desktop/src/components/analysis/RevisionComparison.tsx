@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
   GitCommit, 
@@ -14,8 +13,6 @@ import {
   Minus,
   Plus,
   RotateCcw,
-  Clock,
-  Users,
   BarChart3,
   Eye,
   Copy,

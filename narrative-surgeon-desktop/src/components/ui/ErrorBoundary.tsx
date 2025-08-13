@@ -4,7 +4,7 @@
  */
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { AlertTriangle, RefreshCw, Bug, Home, FileText } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Bug, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { errorManager } from '@/lib/errorHandling'
@@ -71,7 +71,7 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidUpdate(prevProps: Props) {
     const { resetOnPropsChange, children } = this.props
-    const { hasError, error } = this.state
+    const { hasError, error: _error } = this.state
 
     // Reset error boundary when props change if enabled
     if (resetOnPropsChange && prevProps.children !== children && hasError) {
@@ -235,7 +235,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   private renderFallbackUI() {
-    const { error, retryCount } = this.state
+    const { retryCount } = this.state
     const severity = this.getErrorSeverity()
     const maxRetries = 3
 

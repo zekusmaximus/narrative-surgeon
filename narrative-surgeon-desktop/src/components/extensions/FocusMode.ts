@@ -1,5 +1,5 @@
 import { Extension } from '@tiptap/core';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Plugin, PluginKey, EditorState, Transaction } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 
 interface FocusModeOptions {
@@ -18,32 +18,7 @@ interface FocusModeState {
   animationDuration: number;
 }
 
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    focusMode: {
-      /**
-       * Toggle focus mode on/off
-       */
-      toggleFocusMode: () => ReturnType;
-      /**
-       * Enable focus mode
-       */
-      enableFocusMode: () => ReturnType;
-      /**
-       * Disable focus mode
-       */
-      disableFocusMode: () => ReturnType;
-      /**
-       * Toggle between paragraph and sentence focus
-       */
-      toggleFocusUnit: () => ReturnType;
-      /**
-       * Set focus opacity
-       */
-      setFocusOpacity: (opacity: number) => ReturnType;
-    };
-  }
-}
+// Command interface augmentation moved to central ambient.d.ts
 
 export const FocusModeExtension = Extension.create<FocusModeOptions>({
   name: 'focusMode',
@@ -67,226 +42,159 @@ export const FocusModeExtension = Extension.create<FocusModeOptions>({
   },
 
   addProseMirrorPlugins() {
+    // Helper utilities defined once and reused
+    const findSentenceBounds = (doc: any, pos: number): { sentenceStart: number; sentenceEnd: number } => {
+      let sentenceStart = pos;
+      let sentenceEnd = pos;
+      const text = doc.textContent as string;
+      // Backward scan
+      let currentPos = pos;
+      while (currentPos > 0) {
+        const char = text[currentPos - 1];
+        if (/[.!?]/.test(char)) {
+          const nextChar = text[currentPos];
+          if (!nextChar || /\s/.test(nextChar)) break;
+        }
+        currentPos--;
+      }
+      sentenceStart = Math.max(0, currentPos);
+      // Forward scan
+      currentPos = pos;
+      while (currentPos < text.length) {
+        const char = text[currentPos];
+        if (/[.!?]/.test(char)) {
+          const nextChar = text[currentPos + 1];
+          if (!nextChar || /\s/.test(nextChar)) {
+            currentPos++;
+            while (currentPos < text.length && /\s/.test(text[currentPos])) currentPos++;
+            break;
+          }
+        }
+        currentPos++;
+      }
+      sentenceEnd = Math.min(text.length, currentPos);
+      return { sentenceStart, sentenceEnd };
+    };
+
+    const findParagraphBounds = (doc: any, pos: number): { paragraphStart: number; paragraphEnd: number } => {
+      let paragraphStart = 0;
+      let paragraphEnd = doc.content.size;
+      doc.descendants((node: any, nodePos: number) => {
+        if (node.type.name === 'paragraph') {
+          const nodeStart = nodePos;
+          const nodeEnd = nodePos + node.nodeSize;
+          if (pos >= nodeStart && pos <= nodeEnd) {
+            paragraphStart = nodeStart;
+            paragraphEnd = nodeEnd;
+            return false;
+          }
+        }
+        return undefined;
+      });
+      return { paragraphStart, paragraphEnd };
+    };
+
+  const addFadeDecorations = (_doc: any, decorations: Decoration[], from: number, to: number, fadeOpacity: number, animationDuration: number) => {
+      if (from >= to) return;
+      decorations.push(
+        Decoration.inline(from, to, {
+          class: 'focus-fade',
+          style: `opacity: ${fadeOpacity}; transition: opacity ${animationDuration}ms ease;`,
+        })
+      );
+    };
+
+    const createFocusDecorations = (doc: any, cursorPos: number, focusOnSentence: boolean, fadeOpacity: number, animationDuration: number): DecorationSet => {
+      const decorations: Decoration[] = [];
+      if (focusOnSentence) {
+        const { sentenceStart, sentenceEnd } = findSentenceBounds(doc, cursorPos);
+        addFadeDecorations(doc, decorations, 0, sentenceStart, fadeOpacity, animationDuration);
+        addFadeDecorations(doc, decorations, sentenceEnd, doc.content.size, fadeOpacity, animationDuration);
+        if (sentenceStart < sentenceEnd) {
+          decorations.push(
+            Decoration.inline(sentenceStart, sentenceEnd, {
+              class: 'focus-highlight focus-sentence',
+              style: `transition: all ${animationDuration}ms ease;`,
+            })
+          );
+        }
+      } else {
+        const { paragraphStart, paragraphEnd } = findParagraphBounds(doc, cursorPos);
+        addFadeDecorations(doc, decorations, 0, paragraphStart, fadeOpacity, animationDuration);
+        addFadeDecorations(doc, decorations, paragraphEnd, doc.content.size, fadeOpacity, animationDuration);
+        if (paragraphStart < paragraphEnd) {
+          decorations.push(
+            Decoration.inline(paragraphStart, paragraphEnd, {
+              class: 'focus-highlight focus-paragraph',
+              style: `transition: all ${animationDuration}ms ease;`,
+            })
+          );
+        }
+      }
+      return DecorationSet.create(doc, decorations);
+    };
+
+    const focusModeKey = new PluginKey<FocusModeState>('focusMode');
     return [
       new Plugin({
-        key: new PluginKey('focusMode'),
-        
+        key: focusModeKey,
         state: {
-          init(): FocusModeState {
-            return {
-              enabled: this.options.enabled || false,
-              focusPosition: 0,
-              decorations: DecorationSet.empty,
-              fadeOpacity: this.options.fadeOpacity || 0.3,
-              focusOnSentence: this.options.focusOnSentence || false,
-              animationDuration: this.options.animationDuration || 200,
-            };
-          },
-
-          apply(tr, oldState): FocusModeState {
-            let newState = { ...oldState };
-            
-            // Map decorations through document changes
-            newState.decorations = oldState.decorations.map(tr.mapping, tr.doc);
-
-            // Handle focus mode commands
+          init: (): FocusModeState => ({
+            enabled: this.options.enabled || false,
+            focusPosition: 0,
+            decorations: DecorationSet.empty,
+            fadeOpacity: this.options.fadeOpacity || 0.3,
+            focusOnSentence: this.options.focusOnSentence || false,
+            animationDuration: this.options.animationDuration || 200,
+          }),
+          apply: (tr, oldState: FocusModeState): FocusModeState => {
             const meta = tr.getMeta('focusMode');
+            const decorations = oldState.decorations.map(tr.mapping, tr.doc);
+            let next: FocusModeState = { ...oldState, decorations };
             if (meta) {
               switch (meta.type) {
                 case 'toggle':
-                  newState.enabled = !newState.enabled;
-                  break;
+                  next.enabled = !next.enabled; break;
                 case 'enable':
-                  newState.enabled = true;
-                  break;
+                  next.enabled = true; break;
                 case 'disable':
-                  newState.enabled = false;
-                  newState.decorations = DecorationSet.empty;
-                  return newState;
+                  next.enabled = false; next.decorations = DecorationSet.empty; return next;
                 case 'toggleUnit':
-                  newState.focusOnSentence = !newState.focusOnSentence;
-                  break;
+                  next.focusOnSentence = !next.focusOnSentence; break;
                 case 'setOpacity':
-                  newState.fadeOpacity = Math.max(0, Math.min(1, meta.opacity));
-                  break;
+                  next.fadeOpacity = Math.max(0, Math.min(1, meta.opacity)); break;
               }
             }
-
-            // Update focus area based on cursor position
-            if (newState.enabled && (tr.selectionSet || meta)) {
+            if (next.enabled && (tr.selectionSet || meta)) {
               const { from } = tr.selection;
-              newState.focusPosition = from;
-              newState.decorations = this.createFocusDecorations(
+              next.focusPosition = from;
+              next.decorations = createFocusDecorations(
                 tr.doc,
                 from,
-                newState.focusOnSentence,
-                newState.fadeOpacity,
-                newState.animationDuration
+                next.focusOnSentence,
+                next.fadeOpacity,
+                next.animationDuration
               );
             }
-
-            return newState;
-          },
+            return next;
+          }
         },
-
         props: {
-          decorations(state) {
-            return this.getState(state)?.decorations;
-          },
+          decorations: (state: EditorState) => (this as any).getState(state)?.decorations,
         },
-
-        view(editorView) {
-          // Add CSS class to editor when focus mode is active
+        view: (editorView) => {
           const updateEditorClass = () => {
-            const state = this.getState(editorView.state);
-            if (state?.enabled) {
-              editorView.dom.classList.add('focus-mode');
-            } else {
-              editorView.dom.classList.remove('focus-mode');
-            }
+            const pluginState: FocusModeState | undefined = focusModeKey.getState(editorView.state);
+            if (pluginState?.enabled) editorView.dom.classList.add('focus-mode');
+            else editorView.dom.classList.remove('focus-mode');
           };
-
-          // Initial setup
           updateEditorClass();
-
           return {
-            update(view, prevState) {
-              const prevFocusState = this.getState(prevState);
-              const currentFocusState = this.getState(view.state);
-              
-              // Update CSS class if mode changed
-              if (prevFocusState?.enabled !== currentFocusState?.enabled) {
-                updateEditorClass();
-              }
-            },
-
-            destroy() {
-              editorView.dom.classList.remove('focus-mode');
-            },
+            update: () => updateEditorClass(),
+            destroy: () => editorView.dom.classList.remove('focus-mode')
           };
-        },
-
-        // Helper method to create focus decorations
-        createFocusDecorations(doc: any, cursorPos: number, focusOnSentence: boolean, fadeOpacity: number, animationDuration: number): DecorationSet {
-          const decorations: Decoration[] = [];
-          
-          if (focusOnSentence) {
-            // Find the current sentence boundaries
-            const { sentenceStart, sentenceEnd } = this.findSentenceBounds(doc, cursorPos);
-            
-            // Add fade decorations for all text except current sentence
-            this.addFadeDecorations(doc, decorations, 0, sentenceStart, fadeOpacity, animationDuration);
-            this.addFadeDecorations(doc, decorations, sentenceEnd, doc.content.size, fadeOpacity, animationDuration);
-            
-            // Add highlight decoration for current sentence
-            if (sentenceStart < sentenceEnd) {
-              decorations.push(
-                Decoration.inline(sentenceStart, sentenceEnd, {
-                  class: 'focus-highlight focus-sentence',
-                  style: `transition: all ${animationDuration}ms ease;`,
-                })
-              );
-            }
-          } else {
-            // Find the current paragraph boundaries
-            const { paragraphStart, paragraphEnd } = this.findParagraphBounds(doc, cursorPos);
-            
-            // Add fade decorations for all text except current paragraph
-            this.addFadeDecorations(doc, decorations, 0, paragraphStart, fadeOpacity, animationDuration);
-            this.addFadeDecorations(doc, decorations, paragraphEnd, doc.content.size, fadeOpacity, animationDuration);
-            
-            // Add highlight decoration for current paragraph
-            if (paragraphStart < paragraphEnd) {
-              decorations.push(
-                Decoration.inline(paragraphStart, paragraphEnd, {
-                  class: 'focus-highlight focus-paragraph',
-                  style: `transition: all ${animationDuration}ms ease;`,
-                })
-              );
-            }
-          }
-
-          return DecorationSet.create(doc, decorations);
-        },
-
-        findSentenceBounds(doc: any, pos: number): { sentenceStart: number, sentenceEnd: number } {
-          let sentenceStart = pos;
-          let sentenceEnd = pos;
-          
-          const text = doc.textContent;
-          const sentenceEnders = /[.!?]+\s/g;
-          
-          // Find sentence start (work backwards from cursor)
-          let currentPos = pos;
-          while (currentPos > 0) {
-            const char = text[currentPos - 1];
-            if (/[.!?]/.test(char)) {
-              // Check if this is actually a sentence end by looking for following whitespace
-              const nextChar = text[currentPos];
-              if (/\s/.test(nextChar) || currentPos === text.length) {
-                break;
-              }
-            }
-            currentPos--;
-          }
-          sentenceStart = Math.max(0, currentPos);
-          
-          // Find sentence end (work forwards from cursor)
-          currentPos = pos;
-          while (currentPos < text.length) {
-            const char = text[currentPos];
-            if (/[.!?]/.test(char)) {
-              // Look ahead for whitespace or end of text
-              const nextChar = text[currentPos + 1];
-              if (!nextChar || /\s/.test(nextChar)) {
-                currentPos++;
-                // Skip any additional whitespace
-                while (currentPos < text.length && /\s/.test(text[currentPos])) {
-                  currentPos++;
-                }
-                break;
-              }
-            }
-            currentPos++;
-          }
-          sentenceEnd = Math.min(text.length, currentPos);
-          
-          return { sentenceStart, sentenceEnd };
-        },
-
-        findParagraphBounds(doc: any, pos: number): { paragraphStart: number, paragraphEnd: number } {
-          let paragraphStart = 0;
-          let paragraphEnd = doc.content.size;
-          let currentPos = 0;
-
-          // Traverse document to find paragraph containing cursor position
-          doc.descendants((node: any, nodePos: number) => {
-            if (node.type.name === 'paragraph') {
-              const nodeStart = nodePos;
-              const nodeEnd = nodePos + node.nodeSize;
-              
-              if (pos >= nodeStart && pos <= nodeEnd) {
-                paragraphStart = nodeStart;
-                paragraphEnd = nodeEnd;
-                return false; // Stop traversing
-              }
-            }
-          });
-
-          return { paragraphStart, paragraphEnd };
-        },
-
-        addFadeDecorations(doc: any, decorations: Decoration[], from: number, to: number, fadeOpacity: number, animationDuration: number) {
-          if (from >= to) return;
-          
-          decorations.push(
-            Decoration.inline(from, to, {
-              class: 'focus-fade',
-              style: `opacity: ${fadeOpacity}; transition: opacity ${animationDuration}ms ease;`,
-            })
-          );
-        },
-      }),
+        }
+      })
     ];
   },
 
@@ -294,7 +202,7 @@ export const FocusModeExtension = Extension.create<FocusModeOptions>({
     return {
       toggleFocusMode:
         () =>
-        ({ dispatch, state }) => {
+        ({ dispatch, state }: { dispatch: (tr: Transaction) => void; state: EditorState }) => {
           if (dispatch) {
             const tr = state.tr.setMeta('focusMode', { type: 'toggle' });
             dispatch(tr);
@@ -304,7 +212,7 @@ export const FocusModeExtension = Extension.create<FocusModeOptions>({
 
       enableFocusMode:
         () =>
-        ({ dispatch, state }) => {
+  ({ dispatch, state }: { dispatch: (tr: Transaction) => void; state: EditorState }) => {
           if (dispatch) {
             const tr = state.tr.setMeta('focusMode', { type: 'enable' });
             dispatch(tr);
@@ -314,7 +222,7 @@ export const FocusModeExtension = Extension.create<FocusModeOptions>({
 
       disableFocusMode:
         () =>
-        ({ dispatch, state }) => {
+  ({ dispatch, state }: { dispatch: (tr: Transaction) => void; state: EditorState }) => {
           if (dispatch) {
             const tr = state.tr.setMeta('focusMode', { type: 'disable' });
             dispatch(tr);
@@ -324,7 +232,7 @@ export const FocusModeExtension = Extension.create<FocusModeOptions>({
 
       toggleFocusUnit:
         () =>
-        ({ dispatch, state }) => {
+  ({ dispatch, state }: { dispatch: (tr: Transaction) => void; state: EditorState }) => {
           if (dispatch) {
             const tr = state.tr.setMeta('focusMode', { type: 'toggleUnit' });
             dispatch(tr);
@@ -334,7 +242,7 @@ export const FocusModeExtension = Extension.create<FocusModeOptions>({
 
       setFocusOpacity:
         (opacity: number) =>
-        ({ dispatch, state }) => {
+  ({ dispatch, state }: { dispatch: (tr: Transaction) => void; state: EditorState }) => {
           if (dispatch) {
             const tr = state.tr.setMeta('focusMode', { 
               type: 'setOpacity', 
@@ -349,8 +257,8 @@ export const FocusModeExtension = Extension.create<FocusModeOptions>({
 
   addKeyboardShortcuts() {
     return {
-      'Mod-Alt-f': () => this.editor.commands.toggleFocusMode(),
-      'Mod-Alt-Shift-f': () => this.editor.commands.toggleFocusUnit(),
+  'Mod-Alt-f': () => (this.editor.commands as any).toggleFocusMode(),
+  'Mod-Alt-Shift-f': () => (this.editor.commands as any).toggleFocusUnit(),
     };
   },
 

@@ -7,10 +7,10 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    /* Bundler mode */
-    "moduleResolution": "bundler",
+  "module": "ESNext",
+  "skipLibCheck": true,
+  /* Bundler mode (align with Next.js 15 + React 19) */
+  "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -25,9 +25,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "allowJs": true,
+  // Removed allowJs (no .js source files in src)
     "incremental": true,
     "esModuleInterop": true,
+  "resolvePackageJsonExports": false,
+  "resolvePackageJsonImports": false,
     "plugins": [
       {
         "name": "next"

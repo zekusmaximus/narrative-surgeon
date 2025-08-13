@@ -1,6 +1,8 @@
 import { Extension, Mark } from '@tiptap/core';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Plugin, PluginKey, EditorState, Transaction } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
+
+const commentsKey = new PluginKey<CommentState>('comments');
 
 interface CommentOptions {
   HTMLAttributes: Record<string, any>;
@@ -32,33 +34,9 @@ interface CommentState {
   decorations: DecorationSet;
 }
 
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    comment: {
-      /**
-       * Add a comment to the selected text
-       */
-      addComment: (text: string, author: string) => ReturnType;
-      /**
-       * Remove a comment
-       */
-      removeComment: (commentId: string) => ReturnType;
-      /**
-       * Resolve/unresolve a comment
-       */
-      toggleCommentResolution: (commentId: string) => ReturnType;
-      /**
-       * Reply to a comment
-       */
-      replyToComment: (commentId: string, text: string, author: string) => ReturnType;
-      /**
-       * Set active comment for UI highlighting
-       */
-      setActiveComment: (commentId: string | null) => ReturnType;
-    };
-  }
-}
+// Command interface augmentation is centralized in src/types/ambient.d.ts
 
+// Command augmentation centralized in ambient.d.ts
 export const CommentMark = Mark.create<CommentOptions>({
   name: 'comment',
 
@@ -75,8 +53,8 @@ export const CommentMark = Mark.create<CommentOptions>({
     return {
       commentId: {
         default: null,
-        parseHTML: element => element.getAttribute('data-comment-id'),
-        renderHTML: attributes => {
+  parseHTML: (element: HTMLElement) => element.getAttribute('data-comment-id'),
+  renderHTML: (attributes: Record<string, any>) => {
           if (!attributes.commentId) {
             return {};
           }
@@ -92,7 +70,7 @@ export const CommentMark = Mark.create<CommentOptions>({
     return [
       {
         tag: 'mark[data-comment-id]',
-        getAttrs: element => {
+  getAttrs: (element: HTMLElement) => {
           const commentId = (element as HTMLElement).getAttribute('data-comment-id');
           return commentId ? { commentId } : false;
         },
@@ -100,7 +78,7 @@ export const CommentMark = Mark.create<CommentOptions>({
     ];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, any> }) {
     return ['mark', {
       ...this.options.HTMLAttributes,
       ...HTMLAttributes,
@@ -122,10 +100,11 @@ export const CommentsExtension = Extension.create<CommentOptions>({
   },
 
   addProseMirrorPlugins() {
+    const extOptions = this.options;
     return [
       new Plugin({
-        key: new PluginKey('comments'),
-        
+        key: commentsKey,
+
         state: {
           init(): CommentState {
             return {
@@ -135,7 +114,7 @@ export const CommentsExtension = Extension.create<CommentOptions>({
             };
           },
 
-          apply(tr, oldState): CommentState {
+          apply(tr: Transaction, oldState: CommentState): CommentState {
             let { comments, activeComment, decorations } = oldState;
 
             // Handle comment-related transactions
@@ -155,8 +134,8 @@ export const CommentsExtension = Extension.create<CommentOptions>({
                   comments = [...comments, newComment];
                   
                   // Notify parent component
-                  if (this.options.onCommentCreate) {
-                    this.options.onCommentCreate(newComment);
+                  if (extOptions.onCommentCreate) {
+                    extOptions.onCommentCreate(newComment);
                   }
                   break;
 
@@ -164,8 +143,8 @@ export const CommentsExtension = Extension.create<CommentOptions>({
                   comments = comments.filter(c => c.id !== commentMeta.commentId);
                   
                   // Notify parent component
-                  if (this.options.onCommentDelete) {
-                    this.options.onCommentDelete(commentMeta.commentId);
+                  if (extOptions.onCommentDelete) {
+                    extOptions.onCommentDelete(commentMeta.commentId);
                   }
                   break;
 
@@ -226,8 +205,8 @@ export const CommentsExtension = Extension.create<CommentOptions>({
                   icon.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (this.options.onCommentClick) {
-                      this.options.onCommentClick(comment.id, comment);
+                    if (extOptions.onCommentClick) {
+                      extOptions.onCommentClick(comment.id, comment);
                     }
                   });
                   return icon;
@@ -250,11 +229,11 @@ export const CommentsExtension = Extension.create<CommentOptions>({
         },
 
         props: {
-          decorations(state) {
-            return this.getState(state)?.decorations;
+          decorations(state: EditorState) {
+            return commentsKey.getState(state)?.decorations;
           },
 
-          handleClick(view, pos, event) {
+          handleClick(_view, _pos, event) {
             const target = event.target as HTMLElement;
             if (target.classList.contains('comment-icon')) {
               return true; // Handled by the decoration click handler
@@ -270,7 +249,7 @@ export const CommentsExtension = Extension.create<CommentOptions>({
     return {
       addComment:
         (text: string, author: string) =>
-        ({ state, dispatch, view }) => {
+  ({ state, dispatch }: { state: EditorState, dispatch: (tr: Transaction) => void }) => {
           const { from, to } = state.selection;
           if (from === to) return false;
 
@@ -294,7 +273,7 @@ export const CommentsExtension = Extension.create<CommentOptions>({
 
       removeComment:
         (commentId: string) =>
-        ({ state, dispatch }) => {
+        ({ state, dispatch }: { state: EditorState, dispatch: (tr: Transaction) => void }) => {
           if (dispatch) {
             // Remove the mark from the document
             const tr = state.tr;
@@ -321,7 +300,7 @@ export const CommentsExtension = Extension.create<CommentOptions>({
 
       toggleCommentResolution:
         (commentId: string) =>
-        ({ state, dispatch }) => {
+        ({ state, dispatch }: { state: EditorState, dispatch: (tr: Transaction) => void }) => {
           if (dispatch) {
             const tr = state.tr.setMeta('comments', {
               type: 'toggle-resolution',
@@ -335,7 +314,7 @@ export const CommentsExtension = Extension.create<CommentOptions>({
 
       replyToComment:
         (commentId: string, text: string, author: string) =>
-        ({ state, dispatch }) => {
+        ({ state, dispatch }: { state: EditorState, dispatch: (tr: Transaction) => void }) => {
           if (dispatch) {
             const tr = state.tr.setMeta('comments', {
               type: 'reply',
@@ -352,7 +331,7 @@ export const CommentsExtension = Extension.create<CommentOptions>({
 
       setActiveComment:
         (commentId: string | null) =>
-        ({ state, dispatch }) => {
+        ({ state, dispatch }: { state: EditorState, dispatch: (tr: Transaction) => void }) => {
           if (dispatch) {
             const tr = state.tr.setMeta('comments', {
               type: 'set-active',
@@ -374,7 +353,7 @@ export const CommentsExtension = Extension.create<CommentOptions>({
 
         // This would trigger a UI dialog to add comment text
         // For now, we'll add a placeholder comment
-        return this.editor.commands.addComment('New comment', 'Anonymous');
+  return (this.editor.commands as any).addComment('New comment', 'Anonymous');
       },
     };
   },
@@ -382,14 +361,12 @@ export const CommentsExtension = Extension.create<CommentOptions>({
 
 // Utility function to get all comments from editor state
 export function getComments(editor: any): CommentInfo[] {
-  const plugin = editor.state.plugins.find((p: any) => p.key.name === 'comments');
-  return plugin?.getState(editor.state)?.comments || [];
+  return commentsKey.getState(editor.state)?.comments || [];
 }
 
 // Utility function to get active comment
 export function getActiveComment(editor: any): string | null {
-  const plugin = editor.state.plugins.find((p: any) => p.key.name === 'comments');
-  return plugin?.getState(editor.state)?.activeComment || null;
+  return commentsKey.getState(editor.state)?.activeComment || null;
 }
 
 export type { CommentInfo, CommentReply, CommentOptions };

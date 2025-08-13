@@ -140,14 +140,14 @@ export class DesktopIntegration {
   private async setupWindowManagement(): Promise<void> {
     try {
       // Listen for window events
-      await appWindow.listen('tauri://window-resized', (event) => {
+      await appWindow.listen('tauri://window-resized', (event: any) => {
         const { width, height } = event.payload as { width: number; height: number }
         this.applicationState.windowBounds.width = width
         this.applicationState.windowBounds.height = height
         this.saveWindowState()
       })
 
-      await appWindow.listen('tauri://window-moved', (event) => {
+      await appWindow.listen('tauri://window-moved', (event: any) => {
         const { x, y } = event.payload as { x: number; y: number }
         this.applicationState.windowBounds.x = x
         this.applicationState.windowBounds.y = y
@@ -489,7 +489,6 @@ export class DesktopIntegration {
       await sendNotification({
         title,
         body,
-        icon: icon || 'icons/128x128.png'
       })
     } catch (error) {
       console.warn('Failed to show notification:', error)
@@ -625,7 +624,7 @@ export class DesktopIntegration {
       }
 
       // Unregister global shortcuts
-      for (const [id, shortcut] of this.globalShortcuts) {
+      for (const [, shortcut] of this.globalShortcuts) {
         try {
           await unregister(shortcut.shortcut)
         } catch (error) {

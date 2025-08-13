@@ -4,13 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Progress } from '@/components/ui/progress'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
   FileText, 
   Download, 
@@ -26,8 +21,6 @@ import {
   Mail,
   Target,
   Briefcase,
-  PenTool,
-  Calendar,
   Globe
 } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/tauri'
@@ -280,7 +273,7 @@ export function PublisherExports({ manuscriptId, className }: { manuscriptId: st
       })
       
       setExportResults(prev => new Map(prev.set(formatId, result)))
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Export failed for ${formatId}:`, error)
       setExportResults(prev => new Map(prev.set(formatId, { error: error.toString() })))
     } finally {
@@ -302,7 +295,7 @@ export function PublisherExports({ manuscriptId, className }: { manuscriptId: st
           }
         })
         results.set(formatId, result)
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Export failed for ${formatId}:`, error)
         results.set(formatId, { error: error.toString() })
       }
@@ -596,7 +589,7 @@ export function PublisherExports({ manuscriptId, className }: { manuscriptId: st
                 <Checkbox
                   id="page-numbers"
                   checked={exportOptions.page_numbers}
-                  onCheckedChange={(checked) => setExportOptions(prev => ({ ...prev, page_numbers: checked as boolean }))}
+                  onCheckedChange={(checked: boolean) => setExportOptions(prev => ({ ...prev, page_numbers: checked }))}
                 />
                 <label htmlFor="page-numbers" className="text-sm">Page numbers</label>
               </div>
@@ -604,7 +597,7 @@ export function PublisherExports({ manuscriptId, className }: { manuscriptId: st
                 <Checkbox
                   id="chapter-breaks"
                   checked={exportOptions.chapter_breaks}
-                  onCheckedChange={(checked) => setExportOptions(prev => ({ ...prev, chapter_breaks: checked as boolean }))}
+                  onCheckedChange={(checked: boolean) => setExportOptions(prev => ({ ...prev, chapter_breaks: checked }))}
                 />
                 <label htmlFor="chapter-breaks" className="text-sm">Chapter breaks</label>
               </div>
@@ -612,7 +605,7 @@ export function PublisherExports({ manuscriptId, className }: { manuscriptId: st
                 <Checkbox
                   id="preserve-formatting"
                   checked={exportOptions.preserve_formatting}
-                  onCheckedChange={(checked) => setExportOptions(prev => ({ ...prev, preserve_formatting: checked as boolean }))}
+                  onCheckedChange={(checked: boolean) => setExportOptions(prev => ({ ...prev, preserve_formatting: checked }))}
                 />
                 <label htmlFor="preserve-formatting" className="text-sm">Preserve formatting</label>
               </div>

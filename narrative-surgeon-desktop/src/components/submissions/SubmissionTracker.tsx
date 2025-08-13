@@ -7,20 +7,15 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@radix-ui/react-dialog'
 import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Send, 
   Clock, 
-  CheckCircle, 
-  XCircle, 
   AlertTriangle,
-  Calendar,
   Plus,
-  Edit,
-  Trash2,
   Bell,
   TrendingUp,
   FileText,
@@ -193,7 +188,7 @@ export function SubmissionTracker({ manuscriptId, className }: { manuscriptId: s
     setIsAddingSubmission(false)
   }
 
-  const updateSubmissionStatus = (submissionId: string, status: Submission['status'], responseMessage?: string) => {
+  const _updateSubmissionStatus = (submissionId: string, status: Submission['status'], responseMessage?: string) => {
     setSubmissions(prev =>
       prev.map(sub =>
         sub.id === submissionId

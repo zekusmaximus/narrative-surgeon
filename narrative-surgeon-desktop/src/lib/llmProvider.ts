@@ -44,7 +44,7 @@ class DesktopLLMManager {
   private fallbackChain: string[] = []
   private cache: Map<string, AnalysisResult> = new Map()
   private requestQueue: AnalysisTask[] = []
-  private isProcessing: boolean = false
+  private _isProcessing: boolean = false
   private healthStatus: Map<string, boolean> = new Map()
   private rateLimiters: Map<string, number> = new Map()
 
@@ -167,7 +167,7 @@ class DesktopLLMManager {
     }
   }
 
-  async selectOptimalProvider(analysisType: string, textLength: number): Promise<string> {
+  async selectOptimalProvider(_analysisType: string, textLength: number): Promise<string> {
     const requiredTokens = Math.ceil(textLength * 1.3) // rough estimate
 
     for (const providerName of this.fallbackChain) {
@@ -276,7 +276,7 @@ class DesktopLLMManager {
   private async analyzeWithOpenAI(
     text: string, 
     analysisType: string, 
-    provider: LLMProvider
+    _provider: LLMProvider
   ): Promise<AnalysisResult> {
     const startTime = Date.now()
     const prompt = this.buildPrompt(text, analysisType)
@@ -320,7 +320,7 @@ class DesktopLLMManager {
   private async analyzeWithAnthropic(
     text: string, 
     analysisType: string, 
-    provider: LLMProvider
+    _provider: LLMProvider
   ): Promise<AnalysisResult> {
     const startTime = Date.now()
     const prompt = this.buildPrompt(text, analysisType)
@@ -365,7 +365,7 @@ class DesktopLLMManager {
   private async analyzeWithOllama(
     text: string, 
     analysisType: string, 
-    provider: LLMProvider
+    _provider: LLMProvider
   ): Promise<AnalysisResult> {
     const startTime = Date.now()
     const prompt = this.buildPrompt(text, analysisType)
@@ -517,7 +517,7 @@ class DesktopLLMManager {
     const startTime = Date.now()
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const _response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'x-api-key': process.env.ANTHROPIC_API_KEY || '',
@@ -560,7 +560,7 @@ class DesktopLLMManager {
     const startTime = Date.now()
 
     try {
-      const response = await fetch('http://localhost:11434/api/generate', {
+      const _response = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -600,10 +600,10 @@ class DesktopLLMManager {
       'genre-fit': `Analyze how well the following text fits its intended genre conventions and market expectations:\n\n${text}`
     }
 
-    return prompts[analysisType] || `Analyze the following text:\n\n${text}`
+    return prompts[analysisType as keyof typeof prompts] || `Analyze the following text:\n\n${text}`
   }
 
-  private parseAnalysisContent(content: string, analysisType: string): any {
+  private parseAnalysisContent(content: string, _analysisType: string): any {
     // Parse and structure the analysis content based on type
     try {
       // Try to parse as JSON first

@@ -70,7 +70,6 @@ export const shortcuts = {
   'Ctrl+;': 'Toggle properties panel',
   'Ctrl++': 'Zoom in',
   'Ctrl+-': 'Zoom out',
-  'Ctrl+0': 'Reset zoom',
 
   // Navigation
   'Ctrl+G': 'Go to line',
@@ -88,8 +87,6 @@ export const shortcuts = {
 
   // AI and Analysis
   'Ctrl+Shift+A': 'AI analysis of selection',
-  'Ctrl+Shift+S': 'Story structure analysis',
-  'Ctrl+Shift+C': 'Character analysis',
   'Ctrl+Shift+W': 'Word count and statistics',
 
   // Comments and Collaboration
@@ -107,12 +104,6 @@ export const shortcuts = {
   // Window Management
   'Ctrl+Tab': 'Switch between open manuscripts',
   'Ctrl+Shift+Tab': 'Switch between open manuscripts (reverse)',
-  'Ctrl+1': 'Switch to manuscript 1',
-  'Ctrl+2': 'Switch to manuscript 2',
-  'Ctrl+3': 'Switch to manuscript 3',
-  'Ctrl+4': 'Switch to manuscript 4',
-  'Ctrl+5': 'Switch to manuscript 5',
-  'Ctrl+6': 'Switch to manuscript 6',
   'Ctrl+7': 'Switch to manuscript 7',
   'Ctrl+8': 'Switch to manuscript 8',
   'Ctrl+9': 'Switch to manuscript 9',

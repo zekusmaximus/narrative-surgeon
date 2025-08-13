@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useImperativeHandle, forwardRef } from 'react'
+import React, { useEffect, useImperativeHandle, forwardRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -15,11 +15,12 @@ import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
-import { Extension } from '@tiptap/core'
+import * as Tiptap from '@tiptap/core'
+const { Extension: CoreExtension, Node: CoreNode, Editor: CoreEditor, Commands: CoreCommands } = Tiptap as any
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 
 // Custom Scene Break extension
-const SceneBreak = Node.create({
+const SceneBreak = CoreNode.create({
   name: 'sceneBreak',
   group: 'block',
   content: '',
@@ -48,11 +49,9 @@ const SceneBreak = Node.create({
 
   addCommands() {
     return {
-      insertSceneBreak:
-        () =>
-        ({ commands }) => {
-          return commands.insertContent({ type: this.name })
-        },
+  insertSceneBreak: () => ({ commands }: { commands: any }) => {
+        return (commands as any).insertContent({ type: this.name })
+      },
     }
   },
 
@@ -64,7 +63,7 @@ const SceneBreak = Node.create({
 })
 
 // Custom Chapter Division extension
-const ChapterDivision = Node.create({
+const ChapterDivision = CoreNode.create({
   name: 'chapterDivision',
   group: 'block',
   content: 'inline*',
@@ -86,15 +85,15 @@ const ChapterDivision = Node.create({
     return [
       {
         tag: 'div[data-type="chapter-division"]',
-        getAttrs: (element) => ({
-          number: element.getAttribute('data-number'),
+        getAttrs: (element: HTMLElement) => ({
+          number: parseInt(element.getAttribute('data-number') || '1', 10),
           title: element.getAttribute('data-title'),
         }),
       },
     ]
   },
 
-  renderHTML({ node }) {
+  renderHTML({ node }: { node: ProseMirrorNode }) {
     return [
       'div',
       {
@@ -109,20 +108,18 @@ const ChapterDivision = Node.create({
 
   addCommands() {
     return {
-      insertChapterDivision:
-        (attrs: { number?: number; title?: string } = {}) =>
-        ({ commands }) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs,
-          })
-        },
+  insertChapterDivision: (attrs: { number?: number; title?: string }) => ({ commands }: { commands: any }) => {
+        return (commands as any).insertContent({
+          type: this.name,
+          attrs,
+        })
+      },
     }
   },
 })
 
 // Auto-save extension
-const AutoSave = Extension.create({
+const AutoSave = CoreExtension.create({
   name: 'autoSave',
 
   addOptions() {
@@ -177,11 +174,8 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
     {
       content,
       onChange,
-      manuscriptId,
-      sceneId,
       readOnly = false,
       showWordCount = true,
-      enableComments = true,
       placeholder = 'Start writing your story...',
       className = '',
       onSave,
@@ -190,12 +184,8 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
   ) => {
     const editor = useEditor({
       extensions: [
-        StarterKit.configure({
-          history: {
-            depth: 100,
-            newGroupDelay: 1000,
-          },
-        }),
+  // StarterKit (history disabled manually by not including history extension)
+  StarterKit.configure({}),
         Underline,
         TextAlign.configure({
           types: ['heading', 'paragraph'],
@@ -231,7 +221,7 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
       ],
       content,
       editable: !readOnly,
-      onUpdate: ({ editor }) => {
+  onUpdate: ({ editor }: { editor: any }) => {
         onChange(editor.getHTML())
       },
       editorProps: {
@@ -239,7 +229,7 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
           class: `prose prose-lg max-w-none min-h-[500px] px-6 py-4 focus:outline-none manuscript-editor ${className}`,
           spellcheck: 'true',
         },
-        handleKeyDown: (view, event) => {
+        handleKeyDown: (_view: any, event: KeyboardEvent) => {
           // Custom keyboard shortcuts
           if (event.ctrlKey || event.metaKey) {
             switch (event.key) {
@@ -262,15 +252,15 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
     useImperativeHandle(ref, () => ({
       getWordCount: () => editor?.storage?.characterCount?.words() || 0,
       getCharacterCount: () => editor?.storage?.characterCount?.characters() || 0,
-      insertSceneBreak: () => editor?.commands.insertSceneBreak(),
+      insertSceneBreak: () => (editor?.commands as any).insertSceneBreak(),
       insertChapterDivision: (number: number, title?: string) =>
-        editor?.commands.insertChapterDivision({ number, title }),
-      focus: () => editor?.commands.focus(),
-      blur: () => editor?.commands.blur(),
+        (editor?.commands as any).insertChapterDivision({ number, title }),
+  focus: () => (editor?.commands as any).focus(),
+  blur: () => (editor?.commands as any).blur(),
       getHTML: () => editor?.getHTML() || '',
       getText: () => editor?.getText() || '',
-      setContent: (content: string) => editor?.commands.setContent(content),
-      insertText: (text: string) => editor?.commands.insertContent(text),
+  setContent: (content: string) => (editor?.commands as any).setContent(content),
+  insertText: (text: string) => (editor?.commands as any).insertContent(text),
       find: (searchTerm: string) => {
         // TODO: Implement find functionality
         console.log('Find:', searchTerm)
@@ -284,14 +274,14 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
     // Update content when prop changes
     useEffect(() => {
       if (editor && content !== editor.getHTML()) {
-        editor.commands.setContent(content)
+  (editor.commands as any).setContent(content)
       }
     }, [content, editor])
 
     // Auto-focus on mount
     useEffect(() => {
       if (editor && !readOnly) {
-        editor.commands.focus('end')
+  (editor.commands as any).focus('end')
       }
     }, [editor, readOnly])
 
