@@ -1,9 +1,10 @@
+export type ToastAction = { label: string; onClick: () => void }
 export type ToastOptions = {
   title?: string
   description?: string
   variant?: 'default' | 'destructive' | 'success' | 'warning' | 'info'
   duration?: number
-  action?: React.ReactNode
+  action?: ToastAction
 }
 
 /**
@@ -12,10 +13,9 @@ export type ToastOptions = {
  */
 export function toast(options: ToastOptions) {
   if (typeof window !== 'undefined') {
-    // Basic fallback: log to console; a real UI can subscribe to events.
-    const { title, description, variant } = options
+    const { title, description, variant, action } = options
     // eslint-disable-next-line no-console
-    console.info('[toast]', variant ?? 'default', title ?? '', description ?? '')
+    console.info('[toast]', variant ?? 'default', title ?? '', description ?? '', action?.label ?? '')
   }
   return {
     dismiss: () => void 0

@@ -193,7 +193,7 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
       const newScene = await createScene(manuscript.id, afterSceneId);
       setCurrentScene(newScene);
       if (editor) {
-        editor.commands.setContent(newScene.rawText || '<p>Start writing here...</p>');
+  (editor.commands as any).setContent(newScene.rawText || '<p>Start writing here...</p>');
       }
     } catch (error) {
       console.error('Failed to create scene:', error);

@@ -20,7 +20,7 @@ export const TrackChangesSimple = Extension.create<TrackChangesOptions>({
   addCommands() {
     return {
       toggleTrackChanges: () => ({ commands }: { commands: Commands<any> }) => {
-        return commands.toggleNode('trackChangesSimple', 'paragraph');
+        return (commands as any).toggleNode('trackChangesSimple', 'paragraph');
       },
     };
   },

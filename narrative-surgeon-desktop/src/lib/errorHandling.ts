@@ -416,14 +416,11 @@ export class ErrorManager {
       title: message.title,
       description: message.message,
       variant: message.type === 'error' ? 'destructive' : 'default',
-      action: message.actionLabel ? {
-        altText: message.actionLabel,
-        onClick: message.action
-      } : undefined
+      action: message.actionLabel && message.action ? { label: message.actionLabel, onClick: message.action } : undefined
     })
   }
 
-  suggestRecovery(error: Error, category: ErrorCategory): RecoveryAction[] {
+  suggestRecovery(_error: Error, category: ErrorCategory): RecoveryAction[] {
     const categoryKey = category + '_error'
     const strategies = this.recoveryStrategies.get(categoryKey) || []
     
@@ -511,7 +508,7 @@ export class ErrorManager {
     return sanitized
   }
 
-  private handleCriticalError(error: Error, context: ErrorContext) {
+  private handleCriticalError(_error: Error, _context: ErrorContext) {
     // Immediately save all work
     this.saveApplicationState()
     
@@ -523,12 +520,7 @@ export class ErrorManager {
       title: 'Critical Error Detected',
       description: 'Your work has been automatically saved. The application will attempt to recover.',
       variant: 'destructive',
-      action: {
-        altText: 'Restart Application',
-        onClick: () => {
-          window.location.reload()
-        }
-      }
+      action: { label: 'Restart Application', onClick: () => window.location.reload() }
     })
   }
 
@@ -575,12 +567,7 @@ export class ErrorManager {
       title: 'Recover Your Work',
       description: 'The application detected an unexpected shutdown. Would you like to recover your work?',
       variant: 'default',
-      action: {
-        altText: 'Recover Work',
-        onClick: () => {
-          this.recoverApplicationState(recoveryData)
-        }
-      }
+      action: { label: 'Recover Work', onClick: () => this.recoverApplicationState(recoveryData) }
     })
   }
 
@@ -652,12 +639,12 @@ export class ErrorManager {
     return JSON.parse(localStorage.getItem('user_preferences') || '{}')
   }
 
-  private restoreEditorContent(content: any) {
+  private restoreEditorContent(_content: any) {
     // This would restore the editor content
     // Implementation depends on your editor component
   }
 
-  private restoreOpenManuscripts(manuscripts: any) {
+  private restoreOpenManuscripts(_manuscripts: any) {
     // This would restore the open manuscripts
   }
 

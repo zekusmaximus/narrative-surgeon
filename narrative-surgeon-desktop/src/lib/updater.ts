@@ -3,7 +3,7 @@
  * Provides sophisticated update management with user consent and automatic rollback
  */
 
-import { check, Update as TauriUpdate } from '@tauri-apps/plugin-updater'
+import { check } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { toast } from '@/components/ui/use-toast'
 import { errorManager } from './errorHandling'
@@ -49,6 +49,9 @@ export enum UpdateStatus {
   FAILED = 'failed',
   ROLLED_BACK = 'rolled_back'
 }
+
+// Fallback alias (plugin may not expose Update type in current version)
+type TauriUpdate = any
 
 export class UpdateManager {
   private static instance: UpdateManager
@@ -264,7 +267,7 @@ export class UpdateManager {
     }
   }
 
-  private isCriticalUpdate(update: TauriUpdate): boolean {
+  private isCriticalUpdate(update: any): boolean {
     // Determine if update is critical based on version or changelog
     const body = (update.body || '').toLowerCase()
     return body.includes('critical') || 
@@ -282,7 +285,7 @@ export class UpdateManager {
     }
   }
 
-  private async estimateDownloadSize(update: TauriUpdate): Promise<number> {
+  private async estimateDownloadSize(_update: any): Promise<number> {
     try {
       // This would estimate download size from update metadata
       return 50 * 1024 * 1024 // 50MB placeholder
@@ -302,7 +305,7 @@ export class UpdateManager {
       // Create backup before download
       await this.createBackup()
 
-      await this.currentUpdate.downloadAndInstall((progress) => {
+  await this.currentUpdate.downloadAndInstall((progress: any) => {
         const updateProgress: UpdateProgress = {
           chunkLength: progress.chunkLength,
           contentLength: progress.contentLength,
@@ -315,7 +318,7 @@ export class UpdateManager {
         this.progressCallback?.(updateProgress)
       })
 
-      this.updateStatus(UpdateStatus.DOWNLOADED, this.updateInfo)
+  this.updateStatus(UpdateStatus.DOWNLOADED, this.updateInfo || undefined)
 
       // Record successful download
       this.recordUpdateAttempt(this.updateInfo!.version, true)
@@ -341,10 +344,7 @@ export class UpdateManager {
         title: 'Download Failed',
         description: 'Failed to download update. Please try again.',
         variant: 'destructive',
-        action: {
-          altText: 'Retry',
-          onClick: () => this.downloadUpdate()
-        }
+        action: { label: 'Retry', onClick: () => this.downloadUpdate() }
       })
 
       return false
@@ -392,10 +392,7 @@ export class UpdateManager {
         title: 'Installation Failed',
         description: 'Failed to install update. You can continue using the current version.',
         variant: 'destructive',
-        action: {
-          altText: 'Rollback',
-          onClick: () => this.rollbackUpdate()
-        }
+        action: { label: 'Rollback', onClick: () => this.rollbackUpdate() }
       })
 
       return false
@@ -535,10 +532,7 @@ export class UpdateManager {
         title: 'Ready to Install Update',
         description: `Version ${updateInfo.version} is ready to install. The application will restart.`,
         variant: 'default',
-        action: {
-          altText: 'Install Now',
-          onClick: () => resolve(true)
-        }
+        action: { label: 'Install Now', onClick: () => resolve(true) }
       })
 
       // Auto-confirm for critical updates after 30 seconds
@@ -561,24 +555,19 @@ export class UpdateManager {
   }
 
   private notifyUserOfUpdate(updateInfo: UpdateInfo) {
-    const isLowPriority = !updateInfo.critical
-    
     toast({
       title: `Update Available: v${updateInfo.version}`,
       description: updateInfo.critical 
         ? 'This is a critical security update and should be installed immediately.'
         : 'A new version is available with improvements and bug fixes.',
       variant: updateInfo.critical ? 'destructive' : 'default',
-      action: {
-        altText: updateInfo.critical ? 'Install Now' : 'Download',
-        onClick: () => {
-          if (updateInfo.critical || this.preferences.autoDownload) {
-            this.installUpdate()
-          } else {
-            this.downloadUpdate()
-          }
+      action: { label: updateInfo.critical ? 'Install Now' : 'Download', onClick: () => {
+        if (updateInfo.critical || this.preferences.autoDownload) {
+          this.installUpdate()
+        } else {
+          this.downloadUpdate()
         }
-      }
+      } }
     })
   }
 
@@ -587,10 +576,7 @@ export class UpdateManager {
       title: 'Update Downloaded',
       description: 'The update has been downloaded and is ready to install.',
       variant: 'default',
-      action: {
-        altText: 'Install Now',
-        onClick: () => this.installUpdate()
-      }
+      action: { label: 'Install Now', onClick: () => this.installUpdate() }
     })
   }
 

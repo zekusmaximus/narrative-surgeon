@@ -206,9 +206,9 @@ export const useAppStore = create<AppState>()(
           editorSettings: { ...state.editorSettings, ...settings }
         }))
       },
-    })),
+    })) as any,
     { name: 'narrative-surgeon-store' }
-  )
+  ) as any
 )
 
 // Persist editor settings to localStorage
