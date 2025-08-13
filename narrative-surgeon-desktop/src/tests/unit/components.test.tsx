@@ -12,6 +12,7 @@ import '@testing-library/jest-dom'
 // Component imports
 import { TextEditor } from '@/components/editor/TextEditor'
 import { WordCountDisplay } from '@/components/ui/WordCountDisplay'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import { QueryLetterGenerator } from '@/components/submissions/QueryLetterGenerator'
 import { SubmissionTracker } from '@/components/submissions/SubmissionTracker'
 import { PerformanceAnalytics } from '@/components/submissions/PerformanceAnalytics'
@@ -174,7 +175,7 @@ describe('WordCountDisplay Component', () => {
     
     rerender(<WordCountDisplay text="Initial text with more words added" />)
     
-    expect(screen.getByText('7 words')).toBeInTheDocument()
+    expect(screen.getByText('6 words')).toBeInTheDocument()
   })
 
   test('handles non-English text correctly', () => {
@@ -390,63 +391,69 @@ describe('PerformanceAnalytics Component', () => {
     ]
   }
 
+  const { invoke } = require('@tauri-apps/api/tauri');
+
   beforeEach(() => {
-    const { invoke } = require('@tauri-apps/api/tauri')
-    invoke.mockResolvedValue(mockAnalytics)
-  })
+    invoke.mockClear();
+  });
 
   test('renders analytics overview', async () => {
-    render(<PerformanceAnalytics manuscriptId="test-manuscript" />)
+    invoke.mockResolvedValue(mockAnalytics);
+    render(<PerformanceAnalytics manuscriptId="test-manuscript" />);
     
-    await waitFor(() => {
-      expect(screen.getByText('84/100')).toBeInTheDocument()
-      expect(screen.getByText(/improving/i)).toBeInTheDocument()
-    })
-  })
+    expect(await screen.findByText('84/100')).toBeInTheDocument();
+    expect(await screen.findByText(/improving/i)).toBeInTheDocument();
+  });
 
   test('displays optimization opportunities', async () => {
-    render(<PerformanceAnalytics manuscriptId="test-manuscript" />)
+    invoke.mockResolvedValue(mockAnalytics);
+    render(<PerformanceAnalytics manuscriptId="test-manuscript" />);
     
-    await waitFor(() => {
-      expect(screen.getByText('Improve Query Personalization')).toBeInTheDocument()
-      expect(screen.getByText('+15%')).toBeInTheDocument()
-    })
-  })
+    expect(await screen.findByText('Improve Query Personalization')).toBeInTheDocument();
+    expect(await screen.findByText('+15%')).toBeInTheDocument();
+  });
 
   test('handles loading state', () => {
-    const { invoke } = require('@tauri-apps/api/tauri')
-    invoke.mockImplementation(() => new Promise(() => {})) // Never resolves
+    invoke.mockImplementation(() => new Promise(() => {})); // Never resolves
     
-    render(<PerformanceAnalytics manuscriptId="test-manuscript" />)
+    render(<PerformanceAnalytics manuscriptId="test-manuscript" />);
     
-    expect(screen.getByText(/analyzing performance/i)).toBeInTheDocument()
-  })
+    expect(screen.getByText(/Analyzing performance data.../i)).toBeInTheDocument();
+  });
 
   test('handles analytics errors', async () => {
-    const { invoke } = require('@tauri-apps/api/tauri')
-    invoke.mockRejectedValue(new Error('Analytics failed'))
+    invoke.mockRejectedValue(new Error('Analytics failed'));
     
-    render(<PerformanceAnalytics manuscriptId="test-manuscript" />)
+    render(<PerformanceAnalytics manuscriptId="test-manuscript" />);
     
-    await waitFor(() => {
-      expect(screen.getByText(/failed to load/i)).toBeInTheDocument()
-    })
-  })
+    expect(await screen.findByText(/Failed to load performance analytics/i)).toBeInTheDocument();
+  });
 
   test('allows time range selection', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup();
+    invoke.mockResolvedValue(mockAnalytics);
     
-    render(<PerformanceAnalytics manuscriptId="test-manuscript" />)
+    render(<PerformanceAnalytics manuscriptId="test-manuscript" />);
     
-    const timeRangeSelect = screen.getByRole('combobox')
-    await user.selectOptions(timeRangeSelect, '90d')
-    
-    const { invoke } = require('@tauri-apps/api/tauri')
-    expect(invoke).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ time_range: '90d' })
-    )
-  })
+    // Wait for initial load to complete
+    await screen.findByText('Performance Analytics & Optimization');
+
+    // The custom Select component renders a button as the trigger.
+    // Let's find it by the default value text.
+    const timeRangeSelect = screen.getByText(/Last 30 days/i)
+    await user.click(timeRangeSelect)
+
+    // Now select the new option
+    const option = await screen.findByText('Last 90 days');
+    await user.click(option);
+
+    // It should be called once on mount, and once on change.
+    expect(invoke).toHaveBeenCalledTimes(2);
+    expect(invoke).toHaveBeenLastCalledWith(
+      'get_performance_analytics',
+      { manuscriptId: 'test-manuscript', timeRange: '90d' }
+    );
+  });
 })
 
 describe('Accessibility Tests', () => {
@@ -494,10 +501,18 @@ describe('Error Boundary Tests', () => {
   test('error boundary catches component errors', () => {
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
     
-    const { rerender } = render(<ThrowError shouldThrow={false} />)
+    const { rerender } = render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow={false} />
+      </ErrorBoundary>
+    )
     expect(screen.getByText('No error')).toBeInTheDocument()
     
-    rerender(<ThrowError shouldThrow={true} />)
+    rerender(
+      <ErrorBoundary>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>
+    )
     expect(screen.getByText(/something went wrong/i)).toBeInTheDocument()
     
     consoleError.mockRestore()

@@ -51,6 +51,10 @@ export function TextEditor({
         e.preventDefault()
         onSave?.()
       }
+      // Escape key blurs the editor
+      if (e.key === 'Escape') {
+        ref.current?.blur()
+      }
     },
     [onSave]
   )
