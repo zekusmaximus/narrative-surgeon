@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "test": "jest --config narrative-surgeon/jest.config.js",
+    "build": "tsc"
+  },
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.4.5",
     "@react-navigation/native": "^7.1.17",
@@ -13,7 +17,10 @@
   },
   "devDependencies": {
     "@testing-library/react-native": "^13.2.2",
+    "@types/jest": "^30.0.0",
     "@types/uuid": "^10.0.0",
-    "jest": "^30.0.5"
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "typescript": "^5.9.2"
   }
 }

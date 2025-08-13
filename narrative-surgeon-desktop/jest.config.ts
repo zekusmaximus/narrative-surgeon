@@ -26,7 +26,7 @@ const config: Config = {
     }]
   },
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
-  testPathIgnorePatterns: ['/node_modules/', '/src/tests/e2e/'],
+  testPathIgnorePatterns: ['/node_modules/'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts'
