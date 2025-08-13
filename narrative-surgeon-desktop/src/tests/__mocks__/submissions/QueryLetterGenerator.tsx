@@ -61,6 +61,8 @@ export const QueryLetterGenerator: React.FC<QueryLetterGeneratorProps> = ({ manu
         aria-label="Manuscript Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        required
+        aria-required="true"
       />
 
       <label htmlFor="wc">Word Count</label>

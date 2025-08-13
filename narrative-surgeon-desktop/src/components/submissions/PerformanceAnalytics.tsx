@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { invoke } from '@tauri-apps/api/tauri'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -136,186 +137,14 @@ export function PerformanceAnalytics({ manuscriptId, className }: { manuscriptId
   const loadPerformanceMetrics = async () => {
     setIsLoading(true)
     try {
-      // Simulate API call - in real app, this would fetch actual analytics data
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      const mockMetrics: PerformanceMetrics = {
-        query_performance: {
-          average_score: 84,
-          score_trend: 'improving',
-          top_performing_elements: ['Compelling hook', 'Clear genre positioning', 'Professional tone'],
-          weak_areas: ['Word count precision', 'Comparative titles selection'],
-          industry_comparison: 12, // 12% above industry average
-          personalization_score: 78,
-          hook_effectiveness: 87,
-          genre_alignment: 91
-        },
-        agent_matching: {
-          match_accuracy: 87,
-          successful_matches: 8,
-          failed_matches: 3,
-          match_quality_trend: 'improving',
-          top_matching_criteria: ['Genre expertise', 'Client success rate', 'Response time'],
-          ignored_recommendations: 2,
-          connection_utilization: 65
-        },
-        timing_analysis: {
-          optimal_submission_days: ['Tuesday', 'Wednesday', 'Thursday'],
-          seasonal_performance: {
-            'Spring': 85,
-            'Summer': 72,
-            'Fall': 91,
-            'Winter': 78
-          },
-          response_time_correlation: 0.73,
-          follow_up_effectiveness: 82,
-          submission_frequency_impact: 0.68,
-          market_timing_score: 79
-        },
-        market_positioning: {
-          competitive_advantage_score: 76,
-          genre_saturation_impact: -15,
-          unique_selling_points: [
-            'Unique multicultural perspective',
-            'Timely social themes',
-            'Cross-genre appeal potential'
-          ],
-          market_gaps_identified: [
-            'Underrepresented voices in literary fiction',
-            'Growing interest in social justice themes'
-          ],
-          positioning_effectiveness: 81,
-          trend_alignment: 89
-        },
-        optimization_opportunities: [
-          {
-            id: 'query_personalization',
-            category: 'query',
-            title: 'Increase Query Personalization',
-            description: 'Your personalization score is below optimal. Adding specific agent connections could improve response rates by 15-20%.',
-            potential_impact: 'high',
-            effort_required: 'medium',
-            estimated_improvement: 18,
-            action_items: [
-              'Research recent agent sales and mentions',
-              'Find mutual connections or conferences attended',
-              'Reference specific client successes in your genre',
-              'Mention recent interviews or social media posts'
-            ],
-            priority_score: 92
-          },
-          {
-            id: 'timing_optimization',
-            category: 'timing',
-            title: 'Optimize Submission Timing',
-            description: 'Analysis shows 23% better response rates when submitting Tuesday-Thursday vs. Monday/Friday.',
-            potential_impact: 'medium',
-            effort_required: 'low',
-            estimated_improvement: 23,
-            action_items: [
-              'Schedule submissions for Tuesday-Thursday',
-              'Avoid submission during major holidays',
-              'Consider industry conference schedules',
-              'Track seasonal response patterns'
-            ],
-            priority_score: 78
-          },
-          {
-            id: 'agent_diversification',
-            category: 'targeting',
-            title: 'Diversify Agent Targeting',
-            description: 'You\'re focusing too heavily on established agents. New agents show 31% higher response rates.',
-            potential_impact: 'high',
-            effort_required: 'low',
-            estimated_improvement: 31,
-            action_items: [
-              'Research recently promoted associate agents',
-              'Target agents building their lists',
-              'Consider agents at smaller boutique agencies',
-              'Balance experience levels in submission strategy'
-            ],
-            priority_score: 85
-          }
-        ],
-        comparative_analysis: {
-          peer_comparison: {
-            response_rate_vs_peers: 15, // 15% better than peers
-            request_rate_vs_peers: 8,
-            offer_rate_vs_peers: 22
-          },
-          industry_benchmarks: [
-            {
-              category: 'Response Rate',
-              your_performance: 67,
-              industry_average: 45,
-              top_performers: 80
-            },
-            {
-              category: 'Request Rate',
-              your_performance: 25,
-              industry_average: 18,
-              top_performers: 35
-            },
-            {
-              category: 'Average Response Time',
-              your_performance: 21,
-              industry_average: 28,
-              top_performers: 14
-            }
-          ],
-          genre_specific_metrics: {
-            genre: 'Literary Fiction',
-            performance_percentile: 78,
-            key_insights: [
-              'Above average for debut literary fiction',
-              'Strong performance in urban/contemporary themes',
-              'Opportunity to improve in international markets'
-            ]
-          }
-        },
-        success_predictors: [
-          {
-            factor: 'Query Letter Quality',
-            weight: 0.35,
-            current_score: 84,
-            impact_on_success: 87,
-            optimization_potential: 16,
-            recommendations: [
-              'Strengthen opening hook',
-              'Add more specific comparative titles',
-              'Refine word count positioning'
-            ]
-          },
-          {
-            factor: 'Agent-Manuscript Match',
-            weight: 0.25,
-            current_score: 87,
-            impact_on_success: 89,
-            optimization_potential: 13,
-            recommendations: [
-              'Research agent wish lists more thoroughly',
-              'Utilize professional connections',
-              'Consider debut-friendly agents'
-            ]
-          },
-          {
-            factor: 'Market Timing',
-            weight: 0.20,
-            current_score: 79,
-            impact_on_success: 72,
-            optimization_potential: 21,
-            recommendations: [
-              'Align with seasonal publishing cycles',
-              'Monitor industry acquisition trends',
-              'Consider current social/political climate'
-            ]
-          }
-        ]
-      }
-      
-      setMetrics(mockMetrics)
+      const result = await invoke<PerformanceMetrics>('get_performance_analytics', {
+        manuscriptId,
+        timeRange: selectedTimeRange,
+      })
+      setMetrics(result)
     } catch (error) {
       console.error('Failed to load performance metrics:', error)
+      setMetrics(null)
     } finally {
       setIsLoading(false)
     }
