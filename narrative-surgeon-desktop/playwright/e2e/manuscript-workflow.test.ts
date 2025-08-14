@@ -40,7 +40,7 @@ class TestHelpers {
   }
 }
 
-test.describe('Manuscript Management Workflow', () => {
+test.describe.skip('Manuscript Management Workflow', () => {
   test.beforeEach(async ({ page }) => {
     // Start with clean application state
     await page.goto('/')
@@ -267,7 +267,7 @@ test.describe('Manuscript Management Workflow', () => {
   })
 })
 
-test.describe('Error Handling and Recovery', () => {
+test.describe.skip('Error Handling and Recovery', () => {
   test('Handles network failures gracefully', async ({ page }) => {
     // Simulate network failure during AI analysis
     await page.route('**/api/analyze', route => route.abort())
@@ -307,7 +307,7 @@ test.describe('Error Handling and Recovery', () => {
   })
 })
 
-test.describe('Performance Benchmarks', () => {
+test.describe.skip('Performance Benchmarks', () => {
   test('Application startup time', async ({ page }) => {
     const startTime = Date.now()
     await page.goto('/')

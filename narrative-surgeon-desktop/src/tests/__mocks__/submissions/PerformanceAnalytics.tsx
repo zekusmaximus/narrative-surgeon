@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { invoke } from '@tauri-apps/api/tauri'
 
 export type PerformanceAnalyticsProps = {
   manuscriptId: string
@@ -23,44 +24,46 @@ export const PerformanceAnalytics: React.FC<PerformanceAnalyticsProps> = ({ manu
   const [data, setData] = useState<Analytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
+  const [timeRange, setTimeRange] = useState('30d')
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     let mounted = true
+    setLoading(true)
     ;(async () => {
       try {
-        // Tests mock tauri invoke; this mock component just simulates loaded state
-        if (!mounted) return
-        setData({
-          query_performance: {
-            average_score: 84,
-            score_trend: 'improving',
-            top_performing_elements: ['Strong hook', 'Clear positioning'],
-            weak_areas: ['Comparative titles']
-          },
-          optimization_opportunities: [
-            {
-              id: 'query-personalization',
-              title: 'Improve Query Personalization',
-              potential_impact: 'high',
-              estimated_improvement: 15
-            }
-          ]
-        })
+        const result = await invoke<Analytics>('get_performance_analytics', { manuscriptId, timeRange })
+        if (mounted) {
+          setData(result)
+          setError('')
+        }
       } catch {
-        setError('Failed to load analytics')
+        if (mounted) setError('Failed to load performance analytics')
       } finally {
         if (mounted) setLoading(false)
       }
     })()
     return () => { mounted = false }
-  }, [manuscriptId])
+  }, [manuscriptId, timeRange])
 
-  if (loading) return <div>Analyzing performance…</div>
-  if (error) return <div role="alert">Failed to load</div>
+  if (loading) return <div>Analyzing performance data...</div>
+  if (error) return <div role="alert">Failed to load performance analytics</div>
   if (!data) return null
 
   return (
     <div>
+      <h2>Performance Analytics & Optimization</h2>
+      <button onClick={() => setOpen(o => !o)}>{timeRange === '30d' ? 'Last 30 days' : 'Last 90 days'}</button>
+      {open && (
+        <ul>
+          <li>
+            <button onClick={() => { setTimeRange('30d'); setOpen(false) }}>Last 30 days</button>
+          </li>
+          <li>
+            <button onClick={() => { setTimeRange('90d'); setOpen(false) }}>Last 90 days</button>
+          </li>
+        </ul>
+      )}
       <div>{data.query_performance.average_score}/100</div>
       <div>{data.query_performance.score_trend}</div>
       <ul>
