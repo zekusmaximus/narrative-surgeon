@@ -28,7 +28,7 @@ import {
   CheckIcon,
   XIcon
 } from 'lucide-react';
-import { useManuscriptStore } from '../store/manuscriptStore';
+// REMOVED: import { useManuscriptStore } from '../store/manuscriptStore'; // Multi-manuscript feature removed
 import type { Manuscript, Scene } from '../types';
 
 interface ManuscriptEditorProps {

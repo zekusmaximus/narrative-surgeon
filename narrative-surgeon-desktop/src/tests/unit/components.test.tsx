@@ -13,9 +13,9 @@ import '@testing-library/jest-dom'
 import { TextEditor } from '@/components/editor/TextEditor'
 import { WordCountDisplay } from '@/components/ui/WordCountDisplay'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
-import { QueryLetterGenerator } from '@/components/submissions/QueryLetterGenerator'
-import { SubmissionTracker } from '@/components/submissions/SubmissionTracker'
-import { PerformanceAnalytics } from '@/components/submissions/PerformanceAnalytics'
+// REMOVED: import { QueryLetterGenerator } from '@/components/submissions/QueryLetterGenerator' // Multi-manuscript feature removed
+// REMOVED: import { SubmissionTracker } from '@/components/submissions/SubmissionTracker' // Multi-manuscript feature removed
+// REMOVED: import { PerformanceAnalytics } from '@/components/submissions/PerformanceAnalytics' // Multi-manuscript feature removed
 
 // Mock Tauri API
 jest.mock('@tauri-apps/api/tauri', () => ({

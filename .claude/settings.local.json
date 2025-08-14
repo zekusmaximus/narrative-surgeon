@@ -15,7 +15,14 @@
       "Bash(npm start:*)",
       "Bash(npm create:*)",
       "Bash(mkdir:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(chmod:*)",
+      "Bash(./create-backup.sh:*)",
+      "Bash(cp:*)",
+      "Bash(echo:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }

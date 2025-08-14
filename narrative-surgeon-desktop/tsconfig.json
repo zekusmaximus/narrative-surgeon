@@ -7,10 +7,10 @@
       "DOM",
       "DOM.Iterable"
     ],
-  "module": "ESNext",
-  "skipLibCheck": true,
-  /* Bundler mode (align with Next.js 15 + React 19) */
-  "moduleResolution": "Bundler",
+    "module": "ESNext",
+    "skipLibCheck": true,
+    /* Bundler mode (align with Next.js 15 + React 19) */
+    "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -18,23 +18,26 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-  // Removed allowJs (no .js source files in src)
+    // Removed allowJs (no .js source files in src)
     "incremental": true,
     "esModuleInterop": true,
-  "resolvePackageJsonExports": false,
-  "resolvePackageJsonImports": false,
+    "resolvePackageJsonExports": false,
+    "resolvePackageJsonImports": false,
     "plugins": [
       {
         "name": "next"
       }
-    ]
+    ],
+    "allowJs": true
   },
   "include": [
     ".next/types/**/*.ts",

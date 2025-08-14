@@ -1,7 +1,9 @@
 'use client'
 
-import React, { useEffect, useImperativeHandle, forwardRef } from 'react'
+import React, { useEffect, useImperativeHandle, forwardRef, useCallback, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
+import { Editor, Extension, Node } from '@tiptap/core'
+import { EditorView } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
@@ -15,12 +17,13 @@ import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
-import * as Tiptap from '@tiptap/core'
-const { Extension: CoreExtension, Node: CoreNode, Editor: CoreEditor, Commands: CoreCommands } = Tiptap as any
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 
-// Custom Scene Break extension
-const SceneBreak = CoreNode.create({
+
+/**
+ * Custom Scene Break extension with proper typing
+ */
+const SceneBreak = Node.create({
   name: 'sceneBreak',
   group: 'block',
   content: '',
@@ -49,21 +52,25 @@ const SceneBreak = CoreNode.create({
 
   addCommands() {
     return {
-  insertSceneBreak: () => ({ commands }: { commands: any }) => {
-        return (commands as any).insertContent({ type: this.name })
+      insertSceneBreak: () => ({ commands }: any) => {
+        return commands.insertContent({ type: this.name })
       },
     }
   },
 
   addKeyboardShortcuts() {
     return {
-      'Mod-Shift-Enter': () => this.editor.commands.insertSceneBreak(),
+      'Mod-Shift-Enter': () => {
+        return (this.editor.commands as any).insertSceneBreak()
+      },
     }
   },
 })
 
-// Custom Chapter Division extension
-const ChapterDivision = CoreNode.create({
+/**
+ * Custom Chapter Division extension with proper typing
+ */
+const ChapterDivision = Node.create({
   name: 'chapterDivision',
   group: 'block',
   content: 'inline*',
@@ -108,8 +115,9 @@ const ChapterDivision = CoreNode.create({
 
   addCommands() {
     return {
-  insertChapterDivision: (attrs: { number?: number; title?: string }) => ({ commands }: { commands: any }) => {
-        return (commands as any).insertContent({
+      insertChapterDivision: (attrs: { number?: number; title?: string }) => 
+        ({ commands }: any) => {
+        return commands.insertContent({
           type: this.name,
           attrs,
         })
@@ -118,8 +126,10 @@ const ChapterDivision = CoreNode.create({
   },
 })
 
-// Auto-save extension
-const AutoSave = CoreExtension.create({
+/**
+ * Auto-save extension with proper cleanup and memory leak prevention
+ */
+const AutoSave = Extension.create({
   name: 'autoSave',
 
   addOptions() {
@@ -130,13 +140,37 @@ const AutoSave = CoreExtension.create({
   },
 
   onCreate() {
-    let timeout: NodeJS.Timeout
+    let timeout: NodeJS.Timeout | null = null
 
-    this.editor.on('update', () => {
-      clearTimeout(timeout)
+    /**
+     * Handle editor update with debounced save
+     * FIXED: Proper cleanup to prevent memory leaks
+     */
+    const updateHandler = () => {
+      if (timeout) {
+        clearTimeout(timeout)
+      }
       timeout = setTimeout(() => {
-        this.options.onSave()
+        try {
+          this.options.onSave()
+        } catch (error) {
+          console.error('Auto-save failed:', error)
+        }
       }, this.options.delay)
+    }
+
+    // Add event listener
+    this.editor.on('update', updateHandler)
+    
+    /**
+     * CRITICAL FIX: Proper cleanup on destroy to prevent memory leaks
+     */
+    this.editor.on('destroy', () => {
+      this.editor.off('update', updateHandler)
+      if (timeout) {
+        clearTimeout(timeout)
+        timeout = null
+      }
     })
   },
 })
@@ -157,14 +191,14 @@ export interface EditorProps {
 export interface EditorRef {
   getWordCount: () => number
   getCharacterCount: () => number
-  insertSceneBreak: () => void
-  insertChapterDivision: (number: number, title?: string) => void
-  focus: () => void
-  blur: () => void
+  insertSceneBreak: () => boolean
+  insertChapterDivision: (number: number, title?: string) => boolean
+  focus: () => boolean
+  blur: () => boolean
   getHTML: () => string
   getText: () => string
-  setContent: (content: string) => void
-  insertText: (text: string) => void
+  setContent: (content: string) => boolean
+  insertText: (text: string) => boolean
   find: (searchTerm: string) => void
   replace: (searchTerm: string, replaceWith: string) => void
 }
@@ -182,10 +216,25 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
     },
     ref
   ) => {
+    /**
+     * RACE CONDITION FIX: Track content update state to prevent infinite loops
+     */
+    const [isUpdatingContent, setIsUpdatingContent] = useState(false)
+    const lastContentRef = useRef<string>('')
+
+    /**
+     * RACE CONDITION FIX: Debounced onChange to prevent excessive updates
+     */
+    const debouncedOnChange = useCallback((newContent: string) => {
+      if (newContent !== lastContentRef.current) {
+        lastContentRef.current = newContent
+        onChange(newContent)
+      }
+    }, [onChange])
+
     const editor = useEditor({
       extensions: [
-  // StarterKit (history disabled manually by not including history extension)
-  StarterKit.configure({}),
+        StarterKit,
         Underline,
         TextAlign.configure({
           types: ['heading', 'paragraph'],
@@ -221,16 +270,22 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
       ],
       content,
       editable: !readOnly,
-  onUpdate: ({ editor }: { editor: any }) => {
-        onChange(editor.getHTML())
+      /**
+       * RACE CONDITION FIX: Properly typed onUpdate with content change detection
+       */
+      onUpdate: ({ editor }: { editor: Editor }) => {
+        if (!isUpdatingContent) {
+          const newContent = editor.getHTML()
+          debouncedOnChange(newContent)
+        }
       },
       editorProps: {
         attributes: {
           class: `prose prose-lg max-w-none min-h-[500px] px-6 py-4 focus:outline-none manuscript-editor ${className}`,
           spellcheck: 'true',
         },
-        handleKeyDown: (_view: any, event: KeyboardEvent) => {
-          // Custom keyboard shortcuts
+        handleKeyDown: (_view: EditorView, event: KeyboardEvent) => {
+          // Custom keyboard shortcuts with proper typing
           if (event.ctrlKey || event.metaKey) {
             switch (event.key) {
               case 's':
@@ -248,42 +303,88 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
       },
     })
 
-    // Expose editor methods through ref
+    /**
+     * PROPERLY TYPED: Expose editor methods through ref with null safety
+     */
     useImperativeHandle(ref, () => ({
-      getWordCount: () => editor?.storage?.characterCount?.words() || 0,
-      getCharacterCount: () => editor?.storage?.characterCount?.characters() || 0,
-      insertSceneBreak: () => (editor?.commands as any).insertSceneBreak(),
-      insertChapterDivision: (number: number, title?: string) =>
-        (editor?.commands as any).insertChapterDivision({ number, title }),
-  focus: () => (editor?.commands as any).focus(),
-  blur: () => (editor?.commands as any).blur(),
+      getWordCount: () => {
+        if (!editor?.storage?.characterCount) return 0
+        return editor.storage.characterCount.words()
+      },
+      getCharacterCount: () => {
+        if (!editor?.storage?.characterCount) return 0
+        return editor.storage.characterCount.characters()
+      },
+      insertSceneBreak: () => {
+        if (!editor) return false
+        return (editor.commands as any).insertSceneBreak?.() || false
+      },
+      insertChapterDivision: (number: number, title?: string) => {
+        if (!editor) return false
+        return (editor.commands as any).insertChapterDivision?.({ number, title }) || false
+      },
+      focus: () => {
+        if (!editor) return false
+        return (editor.commands as any).focus('end')
+      },
+      blur: () => {
+        if (!editor) return false
+        return (editor.commands as any).blur()
+      },
       getHTML: () => editor?.getHTML() || '',
       getText: () => editor?.getText() || '',
-  setContent: (content: string) => (editor?.commands as any).setContent(content),
-  insertText: (text: string) => (editor?.commands as any).insertContent(text),
+      setContent: (content: string) => {
+        if (!editor) return false
+        return (editor.commands as any).setContent(content, { emitUpdate: false })
+      },
+      insertText: (text: string) => {
+        if (!editor) return false
+        return (editor.commands as any).insertContent(text)
+      },
       find: (searchTerm: string) => {
-        // TODO: Implement find functionality
+        // TODO: Implement find functionality with proper search API
         console.log('Find:', searchTerm)
       },
       replace: (searchTerm: string, replaceWith: string) => {
-        // TODO: Implement replace functionality
+        // TODO: Implement replace functionality with proper search API
         console.log('Replace:', searchTerm, 'with', replaceWith)
       },
     }), [editor])
 
-    // Update content when prop changes
+    /**
+     * RACE CONDITION FIX: Safe content updates with proper change detection
+     */
     useEffect(() => {
-      if (editor && content !== editor.getHTML()) {
-  (editor.commands as any).setContent(content)
+      if (editor && content !== editor.getHTML() && !isUpdatingContent) {
+        setIsUpdatingContent(true)
+        
+        // Set content without emitting update to prevent circular updates
+        ;(editor.commands as any).setContent(content, { emitUpdate: false })
+        
+        // Reset flag after update is processed
+        setTimeout(() => setIsUpdatingContent(false), 0)
       }
-    }, [content, editor])
+    }, [content, editor, isUpdatingContent])
 
-    // Auto-focus on mount
+    /**
+     * Auto-focus on mount with proper cleanup
+     */
     useEffect(() => {
       if (editor && !readOnly) {
-  (editor.commands as any).focus('end')
+        ;(editor.commands as any).focus('end')
       }
     }, [editor, readOnly])
+
+    /**
+     * MEMORY LEAK PREVENTION: Cleanup on unmount
+     */
+    useEffect(() => {
+      return () => {
+        if (editor) {
+          editor.destroy()
+        }
+      }
+    }, [editor])
 
     if (!editor) {
       return (

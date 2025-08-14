@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import { TauriAPI } from './tauri'
 import type { Manuscript, Scene, ManuscriptSummary } from '../types'
+import { useManuscriptStore } from '../store/manuscript-store'
+import { loadDigitalShadowsManuscript, loadManuscriptFromStorage } from '../manuscript/loader'
+import type { TechnoThrillerManuscript } from '../manuscript/manuscript-data'
 
 interface AppState {
   // UI State
@@ -10,13 +13,18 @@ interface AppState {
   loading: boolean
   error: string | null
 
-  // Manuscripts State
+  // Legacy support - will be deprecated
   manuscripts: ManuscriptSummary[]
   activeManuscript: Manuscript | null
   scenes: Scene[]
 
-  // Editor State
+  // New single-manuscript state
+  currentManuscript: TechnoThrillerManuscript | null
+  isManuscriptMode: boolean // true when using new manuscript system
+
+  // Editor State (enhanced for new system)
   activeSceneId: string | null
+  activeChapterId: number | null // New: for chapter-based editing
   editorContent: string
   unsavedChanges: boolean
   editorSettings: {
@@ -24,6 +32,10 @@ interface AppState {
     theme: 'light' | 'dark'
     focusMode: boolean
     typewriterMode: boolean
+    showWordCount: boolean
+    showChapterNumbers: boolean
+    lineHeight: number
+    fontFamily: string
   }
 
   // Actions
@@ -32,13 +44,23 @@ interface AppState {
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
 
-  // Manuscript Actions
+  // New manuscript actions
+  loadDigitalShadowsManuscript: () => Promise<void>
+  initializeManuscriptMode: () => Promise<void>
+  switchToLegacyMode: () => void
+  
+  // Enhanced editor actions for chapters
+  setActiveChapter: (chapterId: number | null) => void
+  updateChapterContent: (chapterId: number, content: string) => void
+  saveCurrentChapter: () => Promise<void>
+
+  // Legacy manuscript actions (for backward compatibility)
   loadManuscripts: () => Promise<void>
   createManuscript: (title: string, content: string) => Promise<void>
   deleteManuscript: (id: string) => Promise<void>
   setActiveManuscript: (manuscript: Manuscript | null) => void
 
-  // Scene Actions
+  // Legacy scene actions (for backward compatibility)
   loadScenes: (manuscriptId: string) => Promise<void>
   updateScene: (sceneId: string, updates: Partial<Scene>) => Promise<void>
   setActiveScene: (sceneId: string | null) => void
@@ -58,11 +80,17 @@ export const useAppStore = create<AppState>()(
       loading: false,
       error: null,
 
+      // Legacy state
       manuscripts: [],
       activeManuscript: null,
       scenes: [],
 
+      // New manuscript state
+      currentManuscript: null,
+      isManuscriptMode: false,
+
       activeSceneId: null,
+      activeChapterId: null,
       editorContent: '',
       unsavedChanges: false,
       editorSettings: {
@@ -70,6 +98,10 @@ export const useAppStore = create<AppState>()(
         theme: 'light',
         focusMode: false,
         typewriterMode: false,
+        showWordCount: true,
+        showChapterNumbers: true,
+        lineHeight: 1.6,
+        fontFamily: 'Inter',
       },
 
       // UI Actions

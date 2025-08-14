@@ -1,0 +1,67 @@
+[2025-08-14T15:54:42.257Z] 🧹 Starting safe dependency cleanup...
+[2025-08-14T15:54:42.265Z] Creating package.json and package-lock.json backup...
+[2025-08-14T15:54:42.270Z] ✓ Package files backed up
+[2025-08-14T15:54:42.271Z] Analysis complete:
+[2025-08-14T15:54:42.271Z]   - 11 dependencies to remove
+[2025-08-14T15:54:42.272Z]   - 38 dependencies to keep
+[2025-08-14T15:54:42.272Z]   - 7 dependencies to add
+[2025-08-14T15:54:42.273Z] Updating package.json...
+[2025-08-14T15:54:42.273Z]   - Removed: @dnd-kit/core (Used for manuscript list drag-and-drop - single manuscript app)
+[2025-08-14T15:54:42.274Z]   - Removed: @dnd-kit/utilities (Utilities for DnD operations - not needed)
+[2025-08-14T15:54:42.274Z]   - Removed: react-dnd (Alternative drag-drop library - redundant with dnd-kit)
+[2025-08-14T15:54:42.274Z]   - Removed: @dnd-kit/sortable (Manuscript list sorting - not needed for single manuscript)
+[2025-08-14T15:54:42.274Z]   - Removed: react-dnd-html5-backend (Backend for react-dnd - not needed)
+[2025-08-14T15:54:42.274Z]   - Removed: @radix-ui/react-checkbox (Used in submission tracking UI - removing that feature)
+[2025-08-14T15:54:42.274Z]   - Removed: class-variance-authority (Over-engineered component variants - using simple CSS)
+[2025-08-14T15:54:42.274Z]   - Removed: tailwind-merge (Complex Tailwind class merging - not needed with simplified UI)
+[2025-08-14T15:54:42.274Z]   - Removed (dev): @playwright/test (E2E testing for multi-manuscript workflows - replacing with simpler tests)
+[2025-08-14T15:54:42.274Z]   - Removed: clsx (Complex className utilities - simple string concat sufficient)
+[2025-08-14T15:54:42.274Z]   - Removed (dev): @testing-library/user-event (Complex user interaction testing - focus on unit tests)
+[2025-08-14T15:54:42.274Z]   + Added: immer@^10.0.3 (Immutable state updates for clean version control)
+[2025-08-14T15:54:42.274Z]   + Added: openai@^4.20.1 (AI integration for chapter transition analysis)
+[2025-08-14T15:54:42.274Z]   + Added: @anthropic-ai/sdk@^0.9.1 (Claude AI integration for manuscript analysis)
+[2025-08-14T15:54:42.274Z]   + Added: jsdiff@^1.1.1 (Advanced text diffing for version comparison)
+[2025-08-14T15:54:42.275Z]   + Added: react-window-infinite-loader@^1.0.9 (Infinite loading for large documents)
+[2025-08-14T15:54:42.274Z]   + Added: react-window@^1.8.8 (Virtual scrolling for large manuscript performance)
+[2025-08-14T15:54:42.275Z]   ✓ Simplified npm scripts
+[2025-08-14T15:54:42.275Z]   + Added: @types/diff@^5.0.9 (TypeScript types for diff library)
+[2025-08-14T15:54:42.276Z] ✓ package.json updated
+[2025-08-14T15:54:42.277Z] Installing updated dependencies...
+[2025-08-14T15:54:42.277Z] Removing node_modules and package-lock.json for clean install...
+[2025-08-14T15:55:03.596Z] Running npm install...
+[2025-08-14T15:55:09.454Z] ERROR: Dependency installation failed: Command failed: npm install
+npm error code ERESOLVE
+npm error ERESOLVE unable to resolve dependency tree
+npm error
+npm error While resolving: narrative-surgeon-desktop@0.1.0
+npm error Found: @tiptap/core@3.1.0
+npm error node_modules/@tiptap/core
+npm error   @tiptap/core@"3.1.0" from the root project
+npm error
+npm error Could not resolve dependency:
+npm error peer @tiptap/core@"^3.2.0" from @tiptap/extensions@3.2.0
+npm error node_modules/@tiptap/extensions
+npm error   peer @tiptap/extensions@"^3.1.0" from @tiptap/extension-character-count@3.1.0
+npm error   node_modules/@tiptap/extension-character-count
+npm error     @tiptap/extension-character-count@"3.1.0" from the root project
+npm error
+npm error Fix the upstream dependency conflict, or retry
+npm error this command with --force or --legacy-peer-deps
+npm error to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error C:\Users\zeke\AppData\Local\npm-cache\_logs\2025-08-14T15_55_03_827Z-eresolve-report.txt
+npm error A complete log of this run can be found in: C:\Users\zeke\AppData\Local\npm-cache\_logs\2025-08-14T15_55_03_827Z-debug-0.log
+
+[2025-08-14T15:55:09.455Z] Dependency installation failed, but continuing to create rollback...
+[2025-08-14T15:55:09.456Z] Testing TypeScript compilation...
+[2025-08-14T15:55:13.866Z] ERROR: TypeScript compilation failed: Command failed: npx tsc --noEmit --skipLibCheck
+npm warn exec The following package was not found and will be installed: tsc@2.0.4
+
+[2025-08-14T15:55:13.933Z] ✓ Rollback script created: rollback-deps.sh
+[2025-08-14T15:55:13.934Z] ✓ Cleanup report saved to dependency-cleanup-report.json
+[2025-08-14T15:55:13.935Z] 🎉 Dependency cleanup completed!
+[2025-08-14T15:55:13.935Z] 📊 Report: dependency-cleanup-report.json
+[2025-08-14T15:55:13.935Z] 🔄 Rollback: ./rollback-deps.sh
+[2025-08-14T15:55:13.936Z] ⚠️  2 errors occurred - see report for details

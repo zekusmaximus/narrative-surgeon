@@ -1,0 +1,36 @@
+{
+  "timestamp": "2025-08-14T15:55:13.933Z",
+  "success": false,
+  "errors": [
+    "NPM install failed: Command failed: npm install\nnpm error code ERESOLVE\nnpm error ERESOLVE unable to resolve dependency tree\nnpm error\nnpm error While resolving: narrative-surgeon-desktop@0.1.0\nnpm error Found: @tiptap/core@3.1.0\nnpm error node_modules/@tiptap/core\nnpm error   @tiptap/core@\"3.1.0\" from the root project\nnpm error\nnpm error Could not resolve dependency:\nnpm error peer @tiptap/core@\"^3.2.0\" from @tiptap/extensions@3.2.0\nnpm error node_modules/@tiptap/extensions\nnpm error   peer @tiptap/extensions@\"^3.1.0\" from @tiptap/extension-character-count@3.1.0\nnpm error   node_modules/@tiptap/extension-character-count\nnpm error     @tiptap/extension-character-count@\"3.1.0\" from the root project\nnpm error\nnpm error Fix the upstream dependency conflict, or retry\nnpm error this command with --force or --legacy-peer-deps\nnpm error to accept an incorrect (and potentially broken) dependency resolution.\nnpm error\nnpm error\nnpm error For a full report see:\nnpm error C:\\Users\\zeke\\AppData\\Local\\npm-cache\\_logs\\2025-08-14T15_55_03_827Z-eresolve-report.txt\nnpm error A complete log of this run can be found in: C:\\Users\\zeke\\AppData\\Local\\npm-cache\\_logs\\2025-08-14T15_55_03_827Z-debug-0.log\n",
+    "TypeScript compilation failed: Command failed: npx tsc --noEmit --skipLibCheck\nnpm warn exec The following package was not found and will be installed: tsc@2.0.4\n"
+  ],
+  "removedDependencies": [
+    "@dnd-kit/core",
+    "@dnd-kit/sortable",
+    "@dnd-kit/utilities",
+    "react-dnd",
+    "react-dnd-html5-backend",
+    "@radix-ui/react-checkbox",
+    "class-variance-authority",
+    "clsx",
+    "tailwind-merge",
+    "@playwright/test",
+    "@testing-library/user-event"
+  ],
+  "addedDependencies": [
+    "immer",
+    "openai",
+    "@anthropic-ai/sdk",
+    "jsdiff",
+    "react-window",
+    "react-window-infinite-loader",
+    "@types/diff"
+  ],
+  "rollbackScript": "rollback-deps.sh",
+  "logFile": "cleanup-log-1755186882257.txt",
+  "backupFiles": [
+    "package.json_backup_1755186882257",
+    "package-lock.json_backup_1755186882257"
+  ]
+}

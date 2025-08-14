@@ -1,0 +1,167 @@
+{
+  "timestamp": "2025-08-14T16:05:44.356Z",
+  "deletedFiles": [
+    {
+      "original": "src\\app\\manuscripts\\import\\page.tsx",
+      "backup": "deleted-backup\\page.tsx",
+      "importingFiles": 0
+    },
+    {
+      "original": "src\\app\\manuscripts\\[id]\\analysis\\page.tsx",
+      "backup": "deleted-backup\\page_1.tsx",
+      "importingFiles": 0
+    },
+    {
+      "original": "src\\app\\manuscripts\\[id]\\editor\\page.tsx",
+      "backup": "deleted-backup\\page_2.tsx",
+      "importingFiles": 0
+    },
+    {
+      "original": "src\\app\\manuscripts\\[id]\\submissions\\page.tsx",
+      "backup": "deleted-backup\\page_3.tsx",
+      "importingFiles": 0
+    },
+    {
+      "original": "src\\app\\manuscripts\\[id]\\page.tsx",
+      "backup": "deleted-backup\\page_4.tsx",
+      "importingFiles": 0
+    },
+    {
+      "original": "src\\app\\manuscripts\\page.tsx",
+      "backup": "deleted-backup\\page_5.tsx",
+      "importingFiles": 0
+    },
+    {
+      "original": "src\\components\\submissions\\AgentResearch.tsx",
+      "backup": "deleted-backup\\AgentResearch.tsx",
+      "importingFiles": 1
+    },
+    {
+      "original": "src\\components\\submissions\\MarketResearch.tsx",
+      "backup": "deleted-backup\\MarketResearch.tsx",
+      "importingFiles": 1
+    },
+    {
+      "original": "src\\components\\submissions\\PerformanceAnalytics.tsx",
+      "backup": "deleted-backup\\PerformanceAnalytics.tsx",
+      "importingFiles": 1
+    },
+    {
+      "original": "src\\components\\submissions\\PublisherExports.tsx",
+      "backup": "deleted-backup\\PublisherExports.tsx",
+      "importingFiles": 1
+    },
+    {
+      "original": "src\\components\\submissions\\QueryLetterGenerator.tsx",
+      "backup": "deleted-backup\\QueryLetterGenerator.tsx",
+      "importingFiles": 2
+    },
+    {
+      "original": "src\\components\\submissions\\SubmissionDashboard.tsx",
+      "backup": "deleted-backup\\SubmissionDashboard.tsx",
+      "importingFiles": 0
+    },
+    {
+      "original": "src\\components\\submissions\\SubmissionTracker.tsx",
+      "backup": "deleted-backup\\SubmissionTracker.tsx",
+      "importingFiles": 1
+    },
+    {
+      "original": "src/components/ManuscriptsList.tsx",
+      "backup": "deleted-backup\\ManuscriptsList.tsx",
+      "importingFiles": 1
+    },
+    {
+      "original": "src/components/CreateManuscriptDialog.tsx",
+      "backup": "deleted-backup\\CreateManuscriptDialog.tsx",
+      "importingFiles": 1
+    },
+    {
+      "original": "src/components/BatchImportDialog.tsx",
+      "backup": "deleted-backup\\BatchImportDialog.tsx",
+      "importingFiles": 0
+    },
+    {
+      "original": "src/store/manuscriptStore.ts",
+      "backup": "deleted-backup\\manuscriptStore.ts",
+      "importingFiles": 1
+    }
+  ],
+  "deletedDirectories": [
+    "src\\app\\manuscripts\\import",
+    "src\\app\\manuscripts\\[id]\\analysis",
+    "src\\app\\manuscripts\\[id]\\editor",
+    "src\\app\\manuscripts\\[id]\\submissions",
+    "src\\app\\manuscripts\\[id]",
+    "src/app/manuscripts",
+    "src/components/submissions"
+  ],
+  "brokenImports": {
+    "src\\components\\submissions\\SubmissionDashboard.tsx": [
+      {
+        "originalLine": "import AgentResearch from './AgentResearch'",
+        "targetFile": "AgentResearch.tsx",
+        "lineNumber": 37
+      },
+      {
+        "originalLine": "import MarketResearch from './MarketResearch'",
+        "targetFile": "MarketResearch.tsx",
+        "lineNumber": 39
+      },
+      {
+        "originalLine": "import PublisherExports from './PublisherExports'",
+        "targetFile": "PublisherExports.tsx",
+        "lineNumber": 40
+      },
+      {
+        "originalLine": "import QueryLetterGenerator from './QueryLetterGenerator'",
+        "targetFile": "QueryLetterGenerator.tsx",
+        "lineNumber": 36
+      }
+    ],
+    "src\\tests\\unit\\components.test.tsx": [
+      {
+        "originalLine": "import { PerformanceAnalytics } from '@/components/submissions/PerformanceAnalytics'",
+        "targetFile": "PerformanceAnalytics.tsx",
+        "lineNumber": 18
+      },
+      {
+        "originalLine": "import { QueryLetterGenerator } from '@/components/submissions/QueryLetterGenerator'",
+        "targetFile": "QueryLetterGenerator.tsx",
+        "lineNumber": 16
+      },
+      {
+        "originalLine": "import { SubmissionTracker } from '@/components/submissions/SubmissionTracker'",
+        "targetFile": "SubmissionTracker.tsx",
+        "lineNumber": 17
+      }
+    ],
+    "src\\app\\page.tsx": [
+      {
+        "originalLine": "import { ManuscriptsList } from '../components/ManuscriptsList'",
+        "targetFile": "ManuscriptsList.tsx",
+        "lineNumber": 5
+      },
+      {
+        "originalLine": "import { CreateManuscriptDialog } from '../components/CreateManuscriptDialog'",
+        "targetFile": "CreateManuscriptDialog.tsx",
+        "lineNumber": 6
+      }
+    ],
+    "src\\components\\ManuscriptEditor.tsx": [
+      {
+        "originalLine": "import { useManuscriptStore } from '../store/manuscriptStore';",
+        "targetFile": "manuscriptStore.ts",
+        "lineNumber": 31
+      }
+    ]
+  },
+  "backupLocation": "deleted-backup",
+  "logFile": "bloat-removal-1755187542244.log",
+  "nextSteps": [
+    "Run fix-imports.js to resolve broken imports",
+    "Update routing with new minimal layout",
+    "Test application functionality",
+    "If issues, restore from backup"
+  ]
+}

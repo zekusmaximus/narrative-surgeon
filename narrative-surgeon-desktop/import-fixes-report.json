@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-08-14T16:05:50.454Z",
+  "processedFiles": 3,
+  "totalFixes": 1,
+  "stubsCreated": [],
+  "fixes": [
+    {
+      "file": "src\\app\\page.tsx",
+      "fixes": [
+        {
+          "type": "removed_usage",
+          "component": "ManuscriptsList",
+          "line": 58
+        },
+        {
+          "type": "removed_usage",
+          "component": "CreateManuscriptDialog",
+          "line": 68
+        }
+      ]
+    }
+  ],
+  "logFile": "import-fixes-1755187550406.log"
+}

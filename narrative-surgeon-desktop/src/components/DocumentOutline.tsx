@@ -1,22 +1,4 @@
 import { useState, useMemo } from 'react';
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  arrayMove,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import {
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import {
@@ -24,7 +6,6 @@ import {
   ChevronRightIcon,
   FileTextIcon,
   BookOpenIcon,
-  GripVerticalIcon,
   PlusIcon,
   EditIcon,
   TrashIcon,
@@ -54,7 +35,7 @@ interface DocumentOutlineProps {
   targetWordCount?: number;
 }
 
-interface SortableSceneItemProps {
+interface SceneItemProps {
   scene: Scene;
   isActive: boolean;
   sceneIndex: number;
@@ -64,7 +45,7 @@ interface SortableSceneItemProps {
   onCreateAfter: () => void;
 }
 
-interface SortableChapterProps {
+interface ChapterProps {
   chapter: Chapter;
   chapterIndex: number;
   activeSceneId?: string;
@@ -75,7 +56,7 @@ interface SortableChapterProps {
   onSceneCreate: (afterSceneId?: string) => void;
 }
 
-function SortableSceneItem({
+function SceneItem({
   scene,
   isActive,
   sceneIndex,
@@ -83,24 +64,10 @@ function SortableSceneItem({
   onRename,
   onDelete,
   onCreateAfter,
-}: SortableSceneItemProps) {
+}: SceneItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(scene.title || `Scene ${sceneIndex + 1}`);
   const [showActions, setShowActions] = useState(false);
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: scene.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
 
   const handleRename = () => {
     if (editTitle.trim() && editTitle !== scene.title) {
@@ -122,24 +89,13 @@ function SortableSceneItem({
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       className={cn(
         "group relative flex items-center gap-2 py-2 px-3 rounded-md transition-colors",
-        isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted/50",
-        isDragging ? "opacity-50" : ""
+        isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted/50"
       )}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab hover:cursor-grabbing flex-shrink-0"
-      >
-        <GripVerticalIcon size={12} className="text-muted-foreground" />
-      </div>
-
       <div
         className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
         onClick={onSelect}
@@ -222,7 +178,7 @@ function SortableSceneItem({
   );
 }
 
-function SortableChapter({
+function ChapterSection({
   chapter,
   chapterIndex: _chapterIndex,
   activeSceneId,
@@ -231,33 +187,13 @@ function SortableChapter({
   onSceneRename,
   onSceneDelete,
   onSceneCreate,
-}: SortableChapterProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: chapter.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
+}: ChapterProps) {
   const ChevronIcon = chapter.isCollapsed ? ChevronRightIcon : ChevronDownIcon;
 
   return (
-    <div ref={setNodeRef} style={style} className={isDragging ? "opacity-50" : ""}>
+    <div>
       {/* Chapter Header */}
-      <div
-        className="flex items-center gap-2 py-2 px-2 font-medium text-sm bg-muted/30 rounded-md mb-1 group"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVerticalIcon size={12} className="text-muted-foreground cursor-grab hover:cursor-grabbing" />
-        
+      <div className="flex items-center gap-2 py-2 px-2 font-medium text-sm bg-muted/30 rounded-md mb-1 group">
         <Button
           variant="ghost"
           size="sm"
@@ -292,23 +228,18 @@ function SortableChapter({
       {/* Scenes */}
       {!chapter.isCollapsed && (
         <div className="ml-4 space-y-1">
-          <SortableContext
-            items={chapter.scenes.map(scene => scene.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {chapter.scenes.map((scene, sceneIndex) => (
-              <SortableSceneItem
-                key={scene.id}
-                scene={scene}
-                isActive={scene.id === activeSceneId}
-                sceneIndex={sceneIndex}
-                onSelect={() => onSceneSelect(scene)}
-                onRename={(newTitle) => onSceneRename(scene.id, newTitle)}
-                onDelete={() => onSceneDelete(scene.id)}
-                onCreateAfter={() => onSceneCreate(scene.id)}
-              />
-            ))}
-          </SortableContext>
+          {chapter.scenes.map((scene, sceneIndex) => (
+            <SceneItem
+              key={scene.id}
+              scene={scene}
+              isActive={scene.id === activeSceneId}
+              sceneIndex={sceneIndex}
+              onSelect={() => onSceneSelect(scene)}
+              onRename={(newTitle) => onSceneRename(scene.id, newTitle)}
+              onDelete={() => onSceneDelete(scene.id)}
+              onCreateAfter={() => onSceneCreate(scene.id)}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -319,23 +250,14 @@ export function DocumentOutline({
   scenes,
   activeSceneId,
   onSceneSelect,
-  onScenesReorder,
+  onScenesReorder: _onScenesReorder, // Placeholder for future drag-and-drop
   onSceneCreate,
   onSceneDelete,
   onSceneRename,
   manuscriptWordCount,
   targetWordCount = 80000,
 }: DocumentOutlineProps) {
-  const [activeId, setActiveId] = useState<string | null>(null);
   const [collapsedChapters, setCollapsedChapters] = useState<Set<string>>(new Set());
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
 
   // Group scenes into chapters
   const chapters = useMemo(() => {
@@ -363,31 +285,6 @@ export function DocumentOutline({
     return Array.from(chapterMap.values()).sort((a, b) => a.order - b.order);
   }, [scenes, collapsedChapters]);
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (active.id !== over?.id) {
-      // Find all scene IDs in order
-      const allSceneIds = chapters.flatMap(chapter => 
-        chapter.scenes.map(scene => scene.id)
-      );
-
-      const oldIndex = allSceneIds.indexOf(active.id as string);
-      const newIndex = allSceneIds.indexOf(over?.id as string);
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newOrder = arrayMove(allSceneIds, oldIndex, newIndex);
-        onScenesReorder(newOrder);
-      }
-    }
-
-    setActiveId(null);
-  };
-
   const handleToggleCollapse = (chapterId: string) => {
     const newCollapsed = new Set(collapsedChapters);
     if (newCollapsed.has(chapterId)) {
@@ -401,8 +298,6 @@ export function DocumentOutline({
   const progressPercentage = targetWordCount > 0 
     ? Math.min((manuscriptWordCount / targetWordCount) * 100, 100) 
     : 0;
-
-  const activeScene = activeId ? scenes.find(scene => scene.id === activeId) : null;
 
   return (
     <Card className="h-full flex flex-col">
@@ -446,46 +341,19 @@ export function DocumentOutline({
       </CardHeader>
 
       <CardContent className="flex-1 overflow-y-auto p-3 space-y-2">
-        <DndContext
-          sensors={sensors}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={chapters.map(chapter => chapter.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {chapters.map((chapter, index) => (
-              <SortableChapter
-                key={chapter.id}
-                chapter={chapter}
-                chapterIndex={index}
-                activeSceneId={activeSceneId}
-                onSceneSelect={onSceneSelect}
-                onToggleCollapse={handleToggleCollapse}
-                onSceneRename={onSceneRename}
-                onSceneDelete={onSceneDelete}
-                onSceneCreate={onSceneCreate}
-              />
-            ))}
-          </SortableContext>
-
-          <DragOverlay>
-            {activeScene && (
-              <div className="bg-background border border-border rounded-md p-3 shadow-lg">
-                <div className="flex items-center gap-2">
-                  <FileTextIcon size={14} />
-                  <span className="text-sm font-medium">
-                    {activeScene.title || `Scene ${activeScene.indexInManuscript + 1}`}
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {activeScene.wordCount.toLocaleString()} words
-                </div>
-              </div>
-            )}
-          </DragOverlay>
-        </DndContext>
+        {chapters.map((chapter, index) => (
+          <ChapterSection
+            key={chapter.id}
+            chapter={chapter}
+            chapterIndex={index}
+            activeSceneId={activeSceneId}
+            onSceneSelect={onSceneSelect}
+            onToggleCollapse={handleToggleCollapse}
+            onSceneRename={onSceneRename}
+            onSceneDelete={onSceneDelete}
+            onSceneCreate={onSceneCreate}
+          />
+        ))}
 
         {scenes.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">

@@ -5,6 +5,7 @@ import { TiptapEditor, EditorRef } from './TiptapEditor'
 import { MainLayout } from '../layout/MainLayout'
 import { useAppStore } from '@/lib/store'
 import { useGlobalShortcuts } from '@/lib/shortcuts'
+import { ErrorBoundary } from '../ErrorBoundary'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -159,24 +160,49 @@ export function ProfessionalEditor({ manuscriptId }: ProfessionalEditorProps) {
     <MainLayout>
       <div className="h-full flex flex-col">
         {/* Editor Container with Context Menu */}
-        <ContextMenu>
-          <ContextMenuTrigger asChild>
-            <div className="flex-1 overflow-hidden">
-              <TiptapEditor
-                ref={editorRef}
-                content={editorContent}
-                onChange={setEditorContent}
-                manuscriptId={manuscriptId}
-                sceneId={activeSceneId || undefined}
-                onSave={saveCurrentScene}
-                placeholder="Begin writing your story..."
-                className={`
-                  ${editorSettings.focusMode ? 'focus-mode' : ''}
-                  ${editorSettings.typewriterMode ? 'typewriter-mode' : ''}
-                `}
-              />
-            </div>
-          </ContextMenuTrigger>
+        <ErrorBoundary
+          onError={(error, errorInfo) => {
+            console.error('Editor error:', error, errorInfo)
+            // Log to store or external service
+          }}
+        >
+          <ContextMenu>
+            <ContextMenuTrigger asChild>
+              <div className="flex-1 overflow-hidden">
+                <ErrorBoundary
+                  onError={(error, errorInfo) => {
+                    console.error('TiptapEditor error:', error, errorInfo)
+                  }}
+                  fallback={
+                    <div className="flex items-center justify-center min-h-[500px] text-muted-foreground">
+                      <div className="text-center space-y-2">
+                        <p>Editor failed to load</p>
+                        <button 
+                          onClick={() => window.location.reload()}
+                          className="text-sm underline hover:no-underline"
+                        >
+                          Reload editor
+                        </button>
+                      </div>
+                    </div>
+                  }
+                >
+                  <TiptapEditor
+                    ref={editorRef}
+                    content={editorContent}
+                    onChange={setEditorContent}
+                    manuscriptId={manuscriptId}
+                    sceneId={activeSceneId || undefined}
+                    onSave={saveCurrentScene}
+                    placeholder="Begin writing your story..."
+                    className={`
+                      ${editorSettings.focusMode ? 'focus-mode' : ''}
+                      ${editorSettings.typewriterMode ? 'typewriter-mode' : ''}
+                    `}
+                  />
+                </ErrorBoundary>
+              </div>
+            </ContextMenuTrigger>
           
           <ContextMenuContent className="w-64">
             {selectedText && (
@@ -296,7 +322,8 @@ export function ProfessionalEditor({ manuscriptId }: ProfessionalEditorProps) {
               </>
             )}
           </ContextMenuContent>
-        </ContextMenu>
+          </ContextMenu>
+        </ErrorBoundary>
 
         {/* Find and Replace Dialog */}
         {showFindReplace && (

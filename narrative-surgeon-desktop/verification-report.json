@@ -1,0 +1,164 @@
+{
+  "verification": {
+    "timestamp": "2025-08-14T15:59:26.202Z",
+    "criticalFiles": {
+      "status": "pass",
+      "score": 100,
+      "found": 13,
+      "total": 13,
+      "details": [
+        {
+          "file": "package.json",
+          "status": "found"
+        },
+        {
+          "file": "next.config.js",
+          "status": "found"
+        },
+        {
+          "file": "tailwind.config.js",
+          "status": "found"
+        },
+        {
+          "file": "tsconfig.json",
+          "status": "found"
+        },
+        {
+          "file": "src/app/layout.tsx",
+          "status": "found"
+        },
+        {
+          "file": "src/app/page.tsx",
+          "status": "found"
+        },
+        {
+          "file": "src/components/editor/TiptapEditor.tsx",
+          "status": "found"
+        },
+        {
+          "file": "src/store/manuscriptStore.ts",
+          "status": "found"
+        },
+        {
+          "file": "src/lib/tauri.ts",
+          "status": "found"
+        },
+        {
+          "file": "src/types/index.ts",
+          "status": "found"
+        },
+        {
+          "file": "src-tauri/Cargo.toml",
+          "status": "found"
+        },
+        {
+          "file": "src-tauri/src/lib.rs",
+          "status": "found"
+        },
+        {
+          "file": "src-tauri/src/main.rs",
+          "status": "found"
+        }
+      ]
+    },
+    "typeScript": {
+      "status": "fail",
+      "errorCount": 145,
+      "output": "src/components/extensions/FindAndReplace.ts(4,1): error TS6133: 'findWrapping' is declared but its value is never read.\r\nsrc/components/extensions/TrackChanges.ts(4,1): error TS6133: 'DOMParser' is declared but its value is never read.\r\nsrc/components/extensions/TrackChanges.ts(210,53): error TS6133: 'dispatch' is declared but its value is never read.\r\nsrc/components/extensions/TrackChanges.ts(218,15): error TS6133: 'newDecorations' is declared but its value is never read.\r\nsrc/components/help/HelpSystem.tsx(13,33): error TS2305: Module '\"@radix-ui/react-dialog\"' has no exported member 'DialogHeader'.\r\nsrc/components/layout/MainLayout.tsx(3,40): error TS6133: 'useRef' is declared but its value is never read.\r\nsrc/components/layout/MainLayout.tsx(30,25): error TS6133: 'setLeftPanelSize' is declared but its value is never read.\r\nsrc/components/layout/MainLayout.tsx(31,26): error TS6133: 'setRightPanelSize' is declared but its value is never read.\r\nsrc/components/ManuscriptEditor.tsx(3,1): error TS6133: 'Editor' is declared but its value is never read.\r\nsrc/components/submissions/AgentResearch.tsx(12,1): error TS6133: 'Progress' is declared but its value is never read.\r\nsrc/components/submissions/AgentResearch.tsx(16,3): error TS6133: 'Star' is declared but its value is never read.\r\nsrc/components/submissions/AgentResearch.tsx(21,3): error TS6133: 'Award' is declared but its value is never read.\r\nsrc/components/submissions/AgentResearch.tsx(25,3): error TS6133: 'Calendar' is declared but its value is never read.\r\nsrc/components/submissions/AgentResearch.tsx(632,15): error TS2322: Type '{ id: string; checked: boolean; onCheckedChange: (checked: boolean) => void; }' is not assignable to type 'IntrinsicAttributes & CheckboxProps & RefAttributes<HTMLInputElement>'.\r\n  Property 'onCheckedChange' does not exist on type 'IntrinsicAttributes & CheckboxProps & RefAttributes<HTMLInputElement>'.\r\nsrc/components/submissions/MarketResearch.tsx(3,27): error TS6133: 'useEffect' is declared but its value is never read.\r\nsrc/components/submissions/MarketResearch.tsx(8,1): error TS6133: 'Textarea' is declared but its value is never read.\r\nsrc/components/submissions/MarketResearch.tsx(12,1): error TS6133: 'ScrollArea' is declared but its value is never read.\r\nsrc/components/submissions/MarketResearch.tsx(17,3): error TS6133: 'DollarSign' is declared but its value is never read.\r\nsrc/components/submissions/MarketResearch.tsx(18,3): error TS6133: 'Calendar' is declared but its value is never read.\r\nsrc/components/submissions/MarketResearch.tsx(21,3): error TS6133: 'BookOpen' is declared but its value is never read.\r\nsrc/components/submissions/MarketResearch.tsx(22,3): error TS6133: 'Users' is declared but its value is never read.\r\nsrc/components/submissions/MarketResearch.tsx(23,3): error TS6133: 'Globe' is declared but its value is never read.\r\nsrc/components/submissions/MarketResearch.tsx(24,3): error TS6133: 'Award' is declared but its value is never read.\r\nsrc/components/submissions/MarketResearch.tsx(25,3): error TS6133: 'Search' is declared but its value is never read.\r\nsrc/components/submissions/MarketResearch.tsx(45,34): error TS6133: 'manuscriptId' is declared but its value is never read.\r\nsrc/components/submissions/MarketResearch.tsx(219,17): error TS2322: Type '{ children: string[]; key: string; variant: \"secondary\"; className: string; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & { className?: string | undefined; variant?: \"default\" | \"secondary\" | \"destructive\" | \"outline\" | \"warning\" | undefined; } & { children?: ReactNode; }'.\r\n  Property 'onClick' does not exist on type 'IntrinsicAttributes & { className?: string | undefined; variant?: \"default\" | \"secondary\" | \"destructive\" | \"outline\" | \"warning\" | undefined; } & { children?: ReactNode; }'.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(11,1): error TS6133: 'ScrollArea' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(15,3): error TS6133: 'BarChart3' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(16,3): error TS6133: 'PieChart' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(17,3): error TS6133: 'LineChart' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(19,3): error TS6133: 'Award' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(24,3): error TS6133: 'Users' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(25,3): error TS6133: 'Mail' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(30,3): error TS6133: 'BookOpen' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(31,3): error TS6133: 'Search' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(32,3): error TS6133: 'Filter' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(34,3): error TS6133: 'Download' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(35,3): error TS6133: 'Settings' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(131,10): error TS6133: 'focusArea' is declared but its value is never read.\r\nsrc/components/submissions/PerformanceAnalytics.tsx(131,21): error TS6133: 'setFocusArea' is declared but its value is never read.\r\nsrc/components/submissions/PublisherExports.tsx(592,19): error TS2322: Type '{ id: string; checked: boolean; onCheckedChange: (checked: boolean) => void; }' is not assignable to type 'IntrinsicAttributes & CheckboxProps & RefAttributes<HTMLInputElement>'.\r\n  Property 'onCheckedChange' does not exist on type 'IntrinsicAttributes & CheckboxProps & RefAttributes<HTMLInputElement>'.\r\nsrc/components/submissions/PublisherExports.tsx(600,19): error TS2322: Type '{ id: string; checked: boolean; onCheckedChange: (checked: boolean) => void; }' is not assignable to type 'IntrinsicAttributes & CheckboxProps & RefAttributes<HTMLInputElement>'.\r\n  Property 'onCheckedChange' does not exist on type 'IntrinsicAttributes & CheckboxProps & RefAttributes<HTMLInputElement>'.\r\nsrc/components/submissions/PublisherExports.tsx(608,19): error TS2322: Type '{ id: string; checked: boolean; onCheckedChange: (checked: boolean) => void; }' is not assignable to type 'IntrinsicAttributes & CheckboxProps & RefAttributes<HTMLInputElement>'.\r\n  Property 'onCheckedChange' does not exist on type 'IntrinsicAttributes & CheckboxProps & RefAttributes<HTMLInputElement>'.\r\nsrc/components/submissions/QueryLetterGenerator.tsx(21,3): error TS6133: 'User' is declared but its value is never read.\r\nsrc/components/submissions/SubmissionDashboard.tsx(5,1): error TS6133: 'Button' is declared but its value is never read.\r\nsrc/components/submissions/SubmissionDashboard.tsx(6,1): error TS6133: 'Badge' is declared but its value is never read.\r\nsrc/components/submissions/SubmissionDashboard.tsx(12,3): error TS6133: 'Target' is declared but its value is never read.\r\nsrc/components/submissions/SubmissionDashboard.tsx(17,3): error TS6133: 'Calendar' is declared but its value is never read.\r\nsrc/components/submissions/SubmissionDashboard.tsx(20,3): error TS6133: 'AlertTriangle' is declared but its value is never read.\r\nsrc/components/submissions/SubmissionDashboard.tsx(21,3): error TS6133: 'Lightbulb' is declared but its value is never read.\r\nsrc/components/submissions/SubmissionDashboard.tsx(24,3): error TS6133: 'BookOpen' is declared but its value is never read.\r\nsrc/components/submissions/SubmissionDashboard.tsx(28,3): error TS6133: 'LineChart' is declared but its value is never read.\r\nsrc/components/submissions/SubmissionDashboard.tsx(30,3): error TS6133: 'Plus' is declared but its value is never read.\r\nsrc/components/submissions/SubmissionDashboard.tsx(31,3): error TS6133: 'Filter' is declared but its value is never read.\r\nsrc/components/submissions/SubmissionDashboard.tsx(32,3): error TS6133: 'Search' is declared but its value is never read.\r\nsrc/components/submissions/SubmissionDashboard.tsx(497,26): error TS2322: Type '{ manuscriptId: string; }' is not assignable to type 'IntrinsicAttributes & AgentResearchProps'.\r\n  Property 'manuscriptId' does not exist on type 'IntrinsicAttributes & AgentResearchProps'. Did you mean 'manuscript'?\r\nsrc/components/submissions/SubmissionTracker.tsx(10,33): error TS2305: Module '\"@radix-ui/react-dialog\"' has no exported member 'DialogHeader'.\r\nsrc/components/submissions/SubmissionTracker.tsx(13,1): error TS6192: All imports in import declaration are unused.\r\nsrc/components/submissions/SubmissionTracker.tsx(191,9): error TS6133: '_updateSubmissionStatus' is declared but its value is never read.\r\nsrc/components/system/PerformanceDashboard.tsx(97,9): error TS6133: '_getStatusColor' is declared but its value is never read.\r\nsrc/lib/analysis/FullManuscriptAnalyzer.ts(5,1): error TS6133: 'AnalysisResult' is declared but its value is never read.\r\nsrc/lib/analysis/FullManuscriptAnalyzer.ts(376,39): error TS6133: 'results' is declared but its value is never read.\r\nsrc/lib/analysis/FullManuscriptAnalyzer.ts(450,24): error TS6133: 'plotPoints' is declared but its value is never read.\r\nsrc/lib/analysis/FullManuscriptAnalyzer.ts(471,34): error TS6133: 'name' is declared but its value is never read.\r\nsrc/lib/analysis/FullManuscriptAnalyzer.ts(483,37): error TS6133: 'characters' is declared but its value is never read.\r\nsrc/lib/analysis/FullManuscriptAnalyzer.ts(488,37): error TS6133: 'characters' is declared but its value is never read.\r\nsrc/lib/analysis/FullManuscriptAnalyzer.ts(500,31): error TS6133: 'result' is declared but its value is never read.\r\nsrc/lib/analysis/FullManuscriptAnalyzer.ts(560,51): error TS6133: 'characters' is declared but its value is never read.\r\nsrc/lib/analysis/FullManuscriptAnalyzer.ts(560,68): error TS6133: 'quality' is declared but its value is never read.\r\nsrc/lib/analysis/FullManuscriptAnalyzer.ts(560,82): error TS6133: 'market' is declared but its value is never read.\r\nsrc/lib/analysis/RealTimeAnalyzer.ts(45,20): error TS6133: '_TYPING_DEBOUNCE' is declared but its value is never read.\r\nsrc/lib/analysis/RealTimeAnalyzer.ts(123,11): error TS6133: '_prompt' is declared but its value is never read.\r\nsrc/lib/analysis/RealTimeAnalyzer.ts(144,11): error TS6133: '_prompt' is declared but its value is never read.\r\nsrc/lib/analysis/RealTimeAnalyzer.ts(157,11): error TS6133: '_prompt' is declared but its value is never read.\r\nsrc/lib/analysis/RealTimeAnalyzer.ts(183,11): error TS6133: '_prompt' is declared but its value is never read.\r\nsrc/lib/analysis/RealTimeAnalyzer.ts(358,13): error TS6133: '_prompt' is declared but its value is never read.\r\nsrc/lib/analysis/RealTimeAnalyzer.ts(432,11): error TS6133: '_maxPause' is declared but its value is never read.\r\nsrc/lib/backgroundProcessor.ts(32,11): error TS6133: '_isInitialized' is declared but its value is never read.\r\nsrc/lib/backgroundProcessor.ts(261,11): error TS6133: '_cacheIntermediateResults' is declared but its value is never read.\r\nsrc/lib/desktopIntegration.ts(487,55): error TS6133: 'icon' is declared but its value is never read.\r\nsrc/lib/errorHandling.ts(63,11): error TS6133: 'crashRecoveryData' is declared but its value is never read.\r\nsrc/lib/errorHandling.ts(301,11): error TS6133: 'stack' is declared but its value is never read.\r\nsrc/lib/errorHandling.ts(334,40): error TS6133: 'context' is declared but its value is never read.\r\nsrc/lib/errorHandling.ts(356,22): error TS6133: 'error' is declared but its value is never read.\r\nsrc/lib/llmProvider.ts(47,11): error TS6133: '_isProcessing' is declared but its value is never read.\r\nsrc/lib/llmProvider.ts(520,13): error TS6133: '_response' is declared but its value is never read.\r\nsrc/lib/llmProvider.ts(563,13): error TS6133: '_response' is declared but its value is never read.\r\nsrc/lib/store.ts(76,24): error TS7006: Parameter 'view' implicitly has an 'any' type.\r\nsrc/lib/store.ts(76,33): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(77,29): error TS7006: Parameter 'collapsed' implicitly has an 'any' type.\r\nsrc/lib/store.ts(77,43): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(78,20): error TS7006: Parameter 'loading' implicitly has an 'any' type.\r\nsrc/lib/store.ts(78,32): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(79,18): error TS7006: Parameter 'error' implicitly has an 'any' type.\r\nsrc/lib/store.ts(79,28): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(83,9): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(86,11): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(88,11): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(95,32): error TS7006: Parameter 'title' implicitly has an 'any' type.\r\nsrc/lib/store.ts(95,39): error TS7006: Parameter 'content' implicitly has an 'any' type.\r\nsrc/lib/store.ts(96,9): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(100,17): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(102,11): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(109,32): error TS7006: Parameter 'id' implicitly has an 'any' type.\r\nsrc/lib/store.ts(110,9): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(114,11): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(114,15): error TS7006: Parameter 'state' implicitly has an 'any' type.\r\nsrc/lib/store.ts(115,51): error TS7006: Parameter 'm' implicitly has an 'any' type.\r\nsrc/lib/store.ts(120,11): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(127,29): error TS7006: Parameter 'manuscript' implicitly has an 'any' type.\r\nsrc/lib/store.ts(128,9): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(135,11): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(140,26): error TS7006: Parameter 'manuscriptId' implicitly has an 'any' type.\r\nsrc/lib/store.ts(141,9): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(144,11): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(147,37): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(148,13): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(154,11): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(161,27): error TS7006: Parameter 'sceneId' implicitly has an 'any' type.\r\nsrc/lib/store.ts(161,36): error TS7006: Parameter 'updates' implicitly has an 'any' type.\r\nsrc/lib/store.ts(166,11): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(166,15): error TS7006: Parameter 'state' implicitly has an 'any' type.\r\nsrc/lib/store.ts(167,38): error TS7006: Parameter 'scene' implicitly has an 'any' type.\r\nsrc/lib/store.ts(173,11): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(179,24): error TS7006: Parameter 'sceneId' implicitly has an 'any' type.\r\nsrc/lib/store.ts(180,23): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(180,41): error TS7006: Parameter 's' implicitly has an 'any' type.\r\nsrc/lib/store.ts(181,9): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(189,26): error TS7006: Parameter 'content' implicitly has an 'any' type.\r\nsrc/lib/store.ts(190,32): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(190,50): error TS7006: Parameter 's' implicitly has an 'any' type.\r\nsrc/lib/store.ts(190,64): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(191,9): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(198,50): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(201,15): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(204,30): error TS7006: Parameter 'settings' implicitly has an 'any' type.\r\nsrc/lib/store.ts(205,9): error TS2349: This expression is not callable.\r\n  Type 'never' has no call signatures.\r\nsrc/lib/store.ts(205,13): error TS7006: Parameter 'state' implicitly has an 'any' type.\r\nsrc/lib/store.ts(218,5): error TS2554: Expected 1 arguments, but got 2.\r\nsrc/lib/store.ts(218,6): error TS7006: Parameter 'settings' implicitly has an 'any' type.\r\nsrc/scratch-tiptap-direct-dist.ts(2,1): error TS6192: All imports in import declaration are unused.\r\nsrc/scratch-tiptap-import.ts(5,6): error TS6196: '_Check' is declared but never used.\r\nsrc/scratch-tiptap-namespace.ts(6,7): error TS6133: 'extensionCtor' is declared but its value is never read.\r\nsrc/scratch-tiptap-namespace.ts(7,7): error TS6133: 'nodeCtor' is declared but its value is never read.\r\nsrc/test/PerformanceTestSuite.ts(157,13): error TS6133: '_analysisResult' is declared but its value is never read.\r\n",
+      "details": [
+        "src/components/extensions/FindAndReplace.ts(4,1): error TS6133: 'findWrapping' is declared but its value is never read.",
+        "src/components/extensions/TrackChanges.ts(4,1): error TS6133: 'DOMParser' is declared but its value is never read.",
+        "src/components/extensions/TrackChanges.ts(210,53): error TS6133: 'dispatch' is declared but its value is never read.",
+        "src/components/extensions/TrackChanges.ts(218,15): error TS6133: 'newDecorations' is declared but its value is never read.",
+        "src/components/help/HelpSystem.tsx(13,33): error TS2305: Module '\"@radix-ui/react-dialog\"' has no exported member 'DialogHeader'.",
+        "src/components/layout/MainLayout.tsx(3,40): error TS6133: 'useRef' is declared but its value is never read.",
+        "src/components/layout/MainLayout.tsx(30,25): error TS6133: 'setLeftPanelSize' is declared but its value is never read.",
+        "src/components/layout/MainLayout.tsx(31,26): error TS6133: 'setRightPanelSize' is declared but its value is never read.",
+        "src/components/ManuscriptEditor.tsx(3,1): error TS6133: 'Editor' is declared but its value is never read.",
+        "src/components/submissions/AgentResearch.tsx(12,1): error TS6133: 'Progress' is declared but its value is never read."
+      ]
+    },
+    "tauriIntegration": {
+      "status": "pass",
+      "score": 100,
+      "details": [
+        "✓ @tauri-apps/api dependency present",
+        "✓ @tauri-apps/cli dev dependency present",
+        "✓ Tauri configuration file exists",
+        "✓ Core Rust files present"
+      ]
+    },
+    "imports": {
+      "status": "warning",
+      "totalImports": 372,
+      "brokenImports": 1,
+      "suspiciousImports": 6,
+      "details": {
+        "broken": [
+          {
+            "file": "src\\tests\\unit\\components.test.tsx",
+            "import": "import userEvent from '@testing-library/user-event'",
+            "reason": "Removed dependency: @testing-library/user-event"
+          }
+        ],
+        "suspicious": [
+          {
+            "file": "src\\app\\manuscripts\\page.tsx",
+            "import": "import { ManuscriptsList } from '../../components/ManuscriptsList'",
+            "reason": "References removed component"
+          },
+          {
+            "file": "src\\app\\page.tsx",
+            "import": "import { ManuscriptsList } from '../components/ManuscriptsList'",
+            "reason": "References removed component"
+          },
+          {
+            "file": "src\\components\\CreateManuscriptDialog.tsx",
+            "import": "import { BatchImportDialog } from './BatchImportDialog';",
+            "reason": "References removed component"
+          },
+          {
+            "file": "src\\tests\\unit\\components.test.tsx",
+            "import": "import { QueryLetterGenerator } from '@/components/submissions/QueryLetterGenerator'",
+            "reason": "References removed component"
+          },
+          {
+            "file": "src\\tests\\unit\\components.test.tsx",
+            "import": "import { SubmissionTracker } from '@/components/submissions/SubmissionTracker'",
+            "reason": "References removed component"
+          },
+          {
+            "file": "src\\tests\\unit\\components.test.tsx",
+            "import": "import { PerformanceAnalytics } from '@/components/submissions/PerformanceAnalytics'",
+            "reason": "References removed component"
+          }
+        ]
+      }
+    },
+    "dependencies": {
+      "status": "pass",
+      "missing": [],
+      "leftover": [],
+      "totalDependencies": 45,
+      "totalDevDependencies": 18
+    },
+    "overall": {
+      "status": "acceptable",
+      "score": 70.5,
+      "recommendation": "System has some issues but core functionality intact. Review warnings before continuing."
+    }
+  },
+  "summary": {
+    "timestamp": "2025-08-14T15:59:26.202Z",
+    "overallStatus": "acceptable",
+    "score": 70.5,
+    "recommendation": "System has some issues but core functionality intact. Review warnings before continuing.",
+    "criticalIssues": [
+      "TypeScript compilation failing - development will be difficult"
+    ],
+    "nextSteps": [
+      "Fix broken imports from removed dependencies",
+      "Address TypeScript compilation errors"
+    ]
+  }
+}
