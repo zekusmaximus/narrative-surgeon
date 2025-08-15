@@ -25,9 +25,17 @@
       "Bash(mv:*)",
       "Bash(NEXT_LINT=false npm run build)",
       "Bash(git rm:*)",
-      "Bash(timeout 10 npm run dev)"
+      "Bash(timeout 10 npm run dev)",
+      "Bash(cargo check:*)",
+      "WebFetch(domain:docs.rs)",
+      "WebFetch(domain:v2.tauri.app)",
+      "Bash(cargo doc:*)",
+      "WebSearch"
     ],
     "deny": [],
-    "defaultMode": "acceptEdits"
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "C:\\c\\Users\\zeke\\Projects\\narrative-surgeon"
+    ]
   }
 }
