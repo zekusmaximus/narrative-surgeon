@@ -1,359 +1,172 @@
-#!/usr/bin/env node
+const fs = require('fs').promises
+const path = require('path')
 
-/**
- * NARRATIVE SURGEON - IMPORT FIXING SYSTEM
- * Intelligently fixes broken imports after multi-manuscript cleanup
- */
-
-const fs = require('fs').promises;
-const path = require('path');
-
-class ImportFixer {
-  constructor() {
-    this.logFile = `import-fixes-${Date.now()}.log`;
-    this.fixes = [];
-    this.stubs = new Map(); // Track created stub components
-  }
-
-  async log(message, type = 'info') {
-    const timestamp = new Date().toISOString();
-    const logEntry = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
-    console.log(logEntry);
-    await fs.appendFile(this.logFile, logEntry + '\n').catch(() => {});
-  }
-
-  // Define how to handle each removed component
-  getComponentStrategy(componentName) {
-    const strategies = {
-      'ManuscriptsList': {
-        action: 'remove_usage',
-        reason: 'Multi-manuscript listing no longer needed',
-        replacement: null
-      },
-      'CreateManuscriptDialog': {
-        action: 'remove_usage', 
-        reason: 'Single manuscript - no creation dialog needed',
-        replacement: null
-      },
-      'BatchImportDialog': {
-        action: 'remove_usage',
-        reason: 'Single manuscript - no batch import needed', 
-        replacement: null
-      },
-      'manuscriptStore': {
-        action: 'replace_import',
-        reason: 'Replacing with single manuscript store',
-        replacement: './singleManuscriptStore'
-      },
-      'SubmissionTracker': {
-        action: 'create_stub',
-        reason: 'Will rebuild submission features later',
-        replacement: 'SubmissionTrackerStub'
-      },
-      'QueryLetterGenerator': {
-        action: 'create_stub',
-        reason: 'Will rebuild query features later',
-        replacement: 'QueryLetterGeneratorStub'
-      },
-      'AgentResearch': {
-        action: 'create_stub',
-        reason: 'Will rebuild agent research later',
-        replacement: 'AgentResearchStub'
-      },
-      'MarketResearch': {
-        action: 'create_stub',
-        reason: 'Will rebuild market research later',
-        replacement: 'MarketResearchStub'
-      }
-    };
-
-    return strategies[componentName] || {
-      action: 'remove_usage',
-      reason: 'Component removed during cleanup',
-      replacement: null
-    };
-  }
-
-  async createStubComponent(componentName, outputPath) {
-    const stubContent = `// STUB COMPONENT - TODO: Rebuild for single manuscript use
-import React from 'react';
-
-interface ${componentName}Props {
-  [key: string]: any; // Accept any props for compatibility
-}
-
-export function ${componentName}({ ...props }: ${componentName}Props) {
-  return (
-    <div className="p-4 border border-dashed border-gray-300 rounded-md">
-      <div className="text-center text-gray-500">
-        <h3 className="font-medium">${componentName}</h3>
-        <p className="text-sm">This feature will be rebuilt for single manuscript use.</p>
-        <p className="text-xs mt-2">TODO: Implement in Phase 2</p>
-      </div>
-    </div>
-  );
-}
-
-export default ${componentName};
-`;
-
-    await fs.writeFile(outputPath, stubContent);
-    await this.log(`✓ Created stub component: ${outputPath}`);
-    this.stubs.set(componentName, outputPath);
-  }
-
-  async fixImportsInFile(filePath) {
+async function fixImports() {
+  console.log('🔧 Starting automated import cleanup...\n')
+  
+  // Files that likely need fixing based on typical Next.js structure
+  const potentialFilesToFix = [
+    'src/app/page.tsx',
+    'src/app/layout.tsx', 
+    'src/components/layout/MenuBar.tsx',
+    'src/components/layout/MainLayout.tsx',
+    'src/app/manuscripts/[id]/editor/page.tsx',
+    'src/app/manuscripts/page.tsx',
+    'src/lib/store.ts',
+    'src/store/manuscript-store.ts'
+  ]
+  
+  const deletedComponents = [
+    'ManuscriptsList',
+    'CreateManuscriptDialog',
+    'BatchImportDialog', 
+    'SubmissionTracker',
+    'QueryLetterGenerator',
+    'MarketResearch',
+    'AgentDatabase',
+    'PerformanceDashboard',
+    'AgentResearch',
+    'PerformanceAnalytics',
+    'PublisherExports',
+    'SubmissionDashboard'
+  ]
+  
+  const deletedPaths = [
+    '/manuscripts/page',
+    '/submissions/',
+    '/analysis/',
+    '/import/',
+    'manuscriptStore',
+    'ManuscriptsList'
+  ]
+  
+  const fixedFiles = []
+  const errors = []
+  
+  for (const filePath of potentialFilesToFix) {
     try {
-      const content = await fs.readFile(filePath, 'utf8');
-      const lines = content.split('\n');
-      let modified = false;
-      const fixes = [];
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+      // Check if file exists first
+      await fs.access(filePath)
+      
+      let content = await fs.readFile(filePath, 'utf8')
+      let modified = false
+      const originalContent = content
+      
+      console.log(`\n🔍 Checking: ${filePath}`)
+      
+      // Remove import statements for deleted components
+      deletedComponents.forEach(component => {
+        // Match various import patterns
+        const patterns = [
+          new RegExp(`import\\s+\\{[^}]*\\b${component}\\b[^}]*\\}\\s+from\\s+['"][^'"]*['"]\\s*;?\\s*\\n?`, 'g'),
+          new RegExp(`import\\s+${component}\\s+from\\s+['"][^'"]*['"]\\s*;?\\s*\\n?`, 'g'),
+          new RegExp(`import\\s*\\{[^}]*\\}\\s+from\\s+['"][^'"]*${component}[^'"]*['"]\\s*;?\\s*\\n?`, 'g'),
+          new RegExp(`^.*import.*${component}.*\\n`, 'gm')
+        ]
         
-        // Find commented out imports
-        if (line.trim().startsWith('// REMOVED:') && line.includes('Multi-manuscript feature removed')) {
-          const originalImport = line.match(/\/\/ REMOVED: (.+) \/\/ Multi-manuscript feature removed/)?.[1];
-          
-          if (originalImport) {
-            await this.log(`Processing broken import in ${filePath}:${i + 1}: ${originalImport}`);
-            
-            // Extract component name from import
-            const componentMatch = originalImport.match(/import\s+(?:\{([^}]+)\}|(\w+))/);
-            if (componentMatch) {
-              const componentName = componentMatch[1] || componentMatch[2];
-              const cleanComponentName = componentName.replace(/\s+as\s+\w+/g, '').trim();
-              
-              const strategy = this.getComponentStrategy(cleanComponentName);
-              await this.log(`  Strategy for ${cleanComponentName}: ${strategy.action}`);
-              
-              switch (strategy.action) {
-                case 'remove_usage':
-                  // Remove the import line entirely
-                  lines[i] = `// Import removed: ${cleanComponentName} (${strategy.reason})`;
-                  modified = true;
-                  fixes.push({
-                    type: 'removed_import',
-                    component: cleanComponentName,
-                    reason: strategy.reason
-                  });
-                  break;
-                  
-                case 'replace_import':
-                  // Replace with new import path
-                  const newImport = originalImport.replace(/from\s+['"][^'"]+['"]/, `from '${strategy.replacement}'`);
-                  lines[i] = newImport;
-                  modified = true;
-                  fixes.push({
-                    type: 'replaced_import',
-                    component: cleanComponentName,
-                    newPath: strategy.replacement
-                  });
-                  break;
-                  
-                case 'create_stub':
-                  // Create stub component and update import
-                  const stubDir = path.join('src/components/stubs');
-                  await fs.mkdir(stubDir, { recursive: true });
-                  const stubPath = path.join(stubDir, `${strategy.replacement}.tsx`);
-                  
-                  if (!this.stubs.has(strategy.replacement)) {
-                    await this.createStubComponent(strategy.replacement, stubPath);
-                  }
-                  
-                  // Update import to use stub
-                  const stubImport = originalImport.replace(/from\s+['"][^'"]+['"]/, `from '@/components/stubs/${strategy.replacement}'`);
-                  lines[i] = stubImport;
-                  modified = true;
-                  fixes.push({
-                    type: 'stub_import',
-                    component: cleanComponentName,
-                    stubPath: stubPath
-                  });
-                  break;
-              }
-            }
+        patterns.forEach(pattern => {
+          const matches = content.match(pattern)
+          if (matches) {
+            console.log(`  📝 Removing import for: ${component}`)
+            content = content.replace(pattern, '')
+            modified = true
           }
+        })
+      })
+      
+      // Remove imports with deleted paths
+      deletedPaths.forEach(deletedPath => {
+        const pathPattern = new RegExp(`import\\s+.*from\\s+['"][^'"]*${deletedPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^'"]*['"]\\s*;?\\s*\\n?`, 'g')
+        const matches = content.match(pathPattern)
+        if (matches) {
+          console.log(`  📝 Removing import for path: ${deletedPath}`)
+          content = content.replace(pathPattern, '')
+          modified = true
         }
-      }
-
-      // Also scan for usage of removed components
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+      })
+      
+      // Remove component usage (JSX tags)
+      deletedComponents.forEach(component => {
+        // Self-closing tags
+        const selfClosingPattern = new RegExp(`<${component}[^>]*/>`, 'g')
+        if (content.match(selfClosingPattern)) {
+          console.log(`  🗑️  Removing JSX usage: <${component} />`)
+          content = content.replace(selfClosingPattern, '')
+          modified = true
+        }
         
-        // Look for JSX usage of removed components
-        const removedComponents = ['ManuscriptsList', 'CreateManuscriptDialog', 'BatchImportDialog'];
-        for (const component of removedComponents) {
-          if (line.includes(`<${component}`) && !line.trim().startsWith('//')) {
-            lines[i] = `    {/* Removed ${component} - multi-manuscript feature no longer needed */}`;
-            modified = true;
-            fixes.push({
-              type: 'removed_usage',
-              component: component,
-              line: i + 1
-            });
-          }
+        // Opening and closing tags
+        const tagPattern = new RegExp(`<${component}[^>]*>.*?</${component}>`, 'gs')
+        if (content.match(tagPattern)) {
+          console.log(`  🗑️  Removing JSX usage: <${component}>...</${component}>`)
+          content = content.replace(tagPattern, '')
+          modified = true
         }
-      }
-
+        
+        // Function calls
+        const functionPattern = new RegExp(`\\b${component}\\s*\\([^)]*\\)`, 'g')
+        if (content.match(functionPattern)) {
+          console.log(`  🗑️  Removing function call: ${component}()`)
+          content = content.replace(functionPattern, '')
+          modified = true
+        }
+      })
+      
+      // Clean up empty lines and normalize spacing
       if (modified) {
-        await fs.writeFile(filePath, lines.join('\n'));
-        await this.log(`✓ Fixed imports in: ${filePath}`);
-        this.fixes.push({
+        // Remove multiple consecutive empty lines
+        content = content.replace(/\\n\\s*\\n\\s*\\n/g, '\\n\\n')
+        // Remove trailing whitespace
+        content = content.replace(/[ \\t]+$/gm, '')
+        // Ensure file ends with single newline
+        content = content.replace(/\\n*$/, '\\n')
+        
+        await fs.writeFile(filePath, content, 'utf8')
+        fixedFiles.push({
           file: filePath,
-          fixes: fixes
-        });
+          changes: originalContent !== content ? 'Modified' : 'No changes needed'
+        })
+        console.log(`  ✅ Fixed: ${filePath}`)
+      } else {
+        console.log(`  ✅ No changes needed: ${filePath}`)
       }
-
-    } catch (error) {
-      await this.log(`Error fixing imports in ${filePath}: ${error.message}`, 'error');
-    }
-  }
-
-  async findFilesWithBrokenImports() {
-    const files = [];
-    
-    try {
-      const allFiles = await this.getAllTypeScriptFiles('src');
       
-      for (const file of allFiles) {
-        const content = await fs.readFile(file, 'utf8');
-        if (content.includes('// REMOVED:') && content.includes('Multi-manuscript feature removed')) {
-          files.push(file);
-        }
-      }
     } catch (error) {
-      await this.log(`Error scanning for broken imports: ${error.message}`, 'error');
-    }
-
-    return files;
-  }
-
-  async getAllTypeScriptFiles(dir) {
-    const files = [];
-    
-    try {
-      const entries = await fs.readdir(dir, { withFileTypes: true });
-      
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        
-        if (entry.isDirectory() && 
-            !entry.name.startsWith('.') && 
-            entry.name !== 'node_modules' &&
-            entry.name !== 'deleted-backup') {
-          files.push(...await this.getAllTypeScriptFiles(fullPath));
-        } else if (entry.isFile() && (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx'))) {
-          files.push(fullPath);
-        }
-      }
-    } catch (error) {
-      await this.log(`Error reading directory ${dir}: ${error.message}`, 'warning');
-    }
-    
-    return files;
-  }
-
-  async updateBarrelExports() {
-    // Common locations for barrel exports
-    const barrelFiles = [
-      'src/components/index.ts',
-      'src/components/index.tsx', 
-      'src/lib/index.ts',
-      'src/store/index.ts'
-    ];
-
-    for (const barrelFile of barrelFiles) {
-      try {
-        await fs.access(barrelFile);
-        await this.log(`Updating barrel export: ${barrelFile}`);
-        
-        const content = await fs.readFile(barrelFile, 'utf8');
-        const lines = content.split('\n');
-        let modified = false;
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          
-          // Remove exports for deleted components
-          if (line.includes('ManuscriptsList') || 
-              line.includes('CreateManuscriptDialog') ||
-              line.includes('BatchImportDialog') ||
-              line.includes('manuscriptStore')) {
-            lines[i] = `// ${line} // Removed during multi-manuscript cleanup`;
-            modified = true;
-          }
-        }
-
-        if (modified) {
-          await fs.writeFile(barrelFile, lines.join('\n'));
-          await this.log(`✓ Updated barrel export: ${barrelFile}`);
-        }
-
-      } catch (error) {
-        // File doesn't exist or not accessible - skip
-        continue;
-      }
+      const errorMsg = `Could not fix ${filePath}: ${error.message}`
+      console.log(`  ❌ ${errorMsg}`)
+      errors.push({ file: filePath, error: error.message })
     }
   }
-
-  async execute() {
-    try {
-      await this.log('🔧 Starting import fixes...');
-      
-      // Step 1: Find all files with broken imports
-      const brokenFiles = await this.findFilesWithBrokenImports();
-      await this.log(`Found ${brokenFiles.length} files with broken imports`);
-
-      if (brokenFiles.length === 0) {
-        await this.log('No broken imports found - cleanup was already complete');
-        return true;
-      }
-
-      // Step 2: Fix imports in each file
-      for (const file of brokenFiles) {
-        await this.fixImportsInFile(file);
-      }
-
-      // Step 3: Update barrel exports
-      await this.updateBarrelExports();
-
-      // Step 4: Generate report
-      const report = {
-        timestamp: new Date().toISOString(),
-        processedFiles: brokenFiles.length,
-        totalFixes: this.fixes.length,
-        stubsCreated: Array.from(this.stubs.entries()),
-        fixes: this.fixes,
-        logFile: this.logFile
-      };
-
-      await fs.writeFile('import-fixes-report.json', JSON.stringify(report, null, 2));
-
-      await this.log('🎉 Import fixing completed!');
-      await this.log(`📊 Fixed imports in ${brokenFiles.length} files`);
-      await this.log(`📄 Report: import-fixes-report.json`);
-      await this.log(`📁 Stubs created: ${this.stubs.size}`);
-
-      return true;
-
-    } catch (error) {
-      await this.log(`💥 Critical failure: ${error.message}`, 'error');
-      return false;
+  
+  // Generate fix report
+  const report = {
+    timestamp: new Date().toISOString(),
+    fixedFiles: fixedFiles.filter(f => f.changes === 'Modified'),
+    unchangedFiles: fixedFiles.filter(f => f.changes === 'No changes needed'),
+    errors,
+    summary: {
+      totalFilesProcessed: potentialFilesToFix.length,
+      filesFixed: fixedFiles.filter(f => f.changes === 'Modified').length,
+      filesUnchanged: fixedFiles.filter(f => f.changes === 'No changes needed').length,
+      errors: errors.length
     }
   }
+  
+  await fs.writeFile('./import-fixes-report.json', JSON.stringify(report, null, 2))
+  
+  console.log('\\n📊 CLEANUP SUMMARY')
+  console.log('==================')
+  console.log(`✅ Files processed: ${report.summary.totalFilesProcessed}`)
+  console.log(`🔧 Files modified: ${report.summary.filesFixed}`)
+  console.log(`➖ Files unchanged: ${report.summary.filesUnchanged}`)
+  console.log(`❌ Errors: ${report.summary.errors}`)
+  console.log('\\n📄 Detailed report saved to: import-fixes-report.json')
+  
+  return report
 }
 
-// Execute if run directly
 if (require.main === module) {
-  const fixer = new ImportFixer();
-  fixer.execute().then(success => {
-    process.exit(success ? 0 : 1);
-  }).catch(error => {
-    console.error('Unexpected error:', error);
-    process.exit(1);
-  });
+  fixImports().catch(console.error)
 }
 
-module.exports = ImportFixer;
+module.exports = { fixImports }

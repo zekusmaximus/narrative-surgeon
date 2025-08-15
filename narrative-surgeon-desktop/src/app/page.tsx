@@ -1,40 +1,51 @@
 'use client'
 
-import { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-
-// Hard-coded manuscript configuration for single techno-thriller
-const MANUSCRIPT_CONFIG = {
-  id: 'digital-shadows-2024',
-  title: 'Digital Shadows',
-  author: 'Your Name', // TODO: Update with actual author
-  wordCount: 90000,
-  genre: 'techno-thriller'
-}
+import { Button } from '@/components/ui/button'
+import { BookOpen, FileText } from 'lucide-react'
 
 export default function HomePage() {
   const router = useRouter()
-
+  
   useEffect(() => {
-    // Immediately redirect to the single manuscript editor
-    // No manuscript selection needed for single-manuscript app
-    router.push(`/manuscripts/${MANUSCRIPT_CONFIG.id}/editor`)
+    // Auto-redirect to editor after brief delay
+    const timer = setTimeout(() => {
+      router.push('/manuscripts/default/editor')
+    }, 1000)
+    
+    return () => clearTimeout(timer)
   }, [router])
 
-  // Show loading state while redirecting
+  const handleDirectEntry = () => {
+    router.push('/manuscripts/default/editor')
+  }
+
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center space-y-4">
-        <div className="animate-pulse">
-          <h1 className="text-2xl font-bold text-gray-800">Digital Shadows</h1>
-          <p className="text-gray-600">Loading manuscript editor...</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+      <div className="text-center max-w-md mx-auto p-8">
+        <div className="mb-8">
+          <BookOpen className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">
+            Narrative Surgeon
+          </h1>
+          <p className="text-slate-600">
+            Chapter Reordering & Consistency Editor
+          </p>
         </div>
         
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        
-        <div className="text-sm text-gray-500 space-y-1">
-          <div>90,000 words • Techno-thriller</div>
-          <div>Chapter reordering mode</div>
+        <div className="space-y-4">
+          <div className="text-sm text-slate-500">
+            Loading your manuscript...
+          </div>
+          
+          <Button 
+            onClick={handleDirectEntry}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Enter Editor
+          </Button>
         </div>
       </div>
     </div>

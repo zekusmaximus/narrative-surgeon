@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useSingleManuscriptStore } from '@/store/singleManuscriptStore'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,17 +14,25 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { useAppStore } from '@/lib/store'
+import { 
+  Shuffle, 
+  GitBranch, 
+  Save, 
+  FileDown,
+  Settings
+} from 'lucide-react'
 
 interface MenuBarProps {
   className?: string
 }
 
 export function MenuBar({ className }: MenuBarProps) {
-  const { createManuscript, activeManuscript } = useAppStore()
+  const { manuscript, editorMode, unsavedChanges } = useSingleManuscriptStore()
+  const { saveManuscript, setEditorMode } = useSingleManuscriptStore(state => state.actions)
 
   const handleNewManuscript = () => {
-    createManuscript('New Manuscript', 'Start writing here...')
+    // For single manuscript app, this would create a new version instead
+    console.log('New manuscript not implemented for single manuscript mode')
   }
 
   const handleSave = () => {
@@ -42,6 +51,40 @@ export function MenuBar({ className }: MenuBarProps) {
 
   return (
     <div className={`bg-background border-b border-border h-8 flex items-center px-2 ${className}`}>
+      {/* Editor Mode Controls */}
+      <div className="flex items-center gap-1 mr-4">
+        <Button
+          variant={editorMode === 'reorder' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setEditorMode('reorder')}
+          className="h-6 px-2 text-xs"
+        >
+          <Shuffle className="h-3 w-3 mr-1" />
+          Reorder
+        </Button>
+
+        <Button
+          variant={editorMode === 'compare' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setEditorMode('compare')}
+          className="h-6 px-2 text-xs"
+        >
+          <GitBranch className="h-3 w-3 mr-1" />
+          Versions
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={saveManuscript}
+          disabled={!unsavedChanges}
+          className="h-6 px-2 text-xs"
+        >
+          <Save className="h-3 w-3 mr-1" />
+          {unsavedChanges ? 'Save' : 'Saved'}
+        </Button>
+      </div>
+
       {/* File Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -281,7 +324,7 @@ export function MenuBar({ className }: MenuBarProps) {
 
       {/* Window Title */}
       <div className="flex-1 text-center text-xs text-muted-foreground">
-        {activeManuscript ? activeManuscript.title : 'Narrative Surgeon'}
+        {manuscript ? manuscript.metadata.title : 'Narrative Surgeon'}
       </div>
 
       {/* Window Controls Placeholder */}

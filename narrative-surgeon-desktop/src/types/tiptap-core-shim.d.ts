@@ -2,4 +2,9 @@
 // Workaround for resolver failing to surface Editor/Extension/Node despite presence in dist index.d.ts
 declare module '@tiptap/core' {
   export * from '@tiptap/core/dist/index.d.ts'
+  
+  interface Commands<ReturnType = any> {
+    insertSceneBreak: () => ReturnType
+    insertChapterDivision: (attrs: { number?: number; title?: string }) => ReturnType
+  }
 }

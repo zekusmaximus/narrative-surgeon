@@ -2,8 +2,12 @@
 
 import React, { useRef, useEffect, useState } from 'react'
 import { TiptapEditor, EditorRef } from './TiptapEditor'
+import { EditorErrorBoundary } from './EditorErrorBoundary'
 import { MainLayout } from '../layout/MainLayout'
-import { useAppStore } from '@/lib/store'
+import { ChapterReorderPanel } from '../reordering/ChapterReorderPanel'
+import { VersionControlPanel } from '../versioning/VersionControlPanel'
+import { useSingleManuscriptStore } from '@/store/singleManuscriptStore'
+import { loadDefaultManuscript } from '@/lib/manuscript-loader'
 import { useGlobalShortcuts } from '@/lib/shortcuts'
 import { ErrorBoundary } from '../ErrorBoundary'
 import {
@@ -42,13 +46,43 @@ export function ProfessionalEditor({ manuscriptId }: ProfessionalEditorProps) {
   const [showFindReplace, setShowFindReplace] = useState(false)
 
   const {
-    activeSceneId,
-    editorContent,
-    setEditorContent,
-    saveCurrentScene,
-    editorSettings,
-    loading,
-  } = useAppStore()
+    manuscript,
+    activeChapterId,
+    isLoading: loading,
+    editorMode
+  } = useSingleManuscriptStore()
+  
+  const {
+    setManuscript,
+    updateChapterContent,
+    setActiveChapter,
+    saveManuscript
+  } = useSingleManuscriptStore(state => state.actions)
+  
+  // Get active chapter content
+  const activeChapter = manuscript?.content.chapters.find(ch => ch.id === activeChapterId)
+  const editorContent = activeChapter?.content || ''
+
+  // Initialize manuscript on component mount
+  useEffect(() => {
+    const initializeManuscript = async () => {
+      if (!manuscript) {
+        try {
+          const defaultManuscript = await loadDefaultManuscript()
+          setManuscript(defaultManuscript)
+          
+          // Set first chapter as active if available
+          if (defaultManuscript.content.chapters.length > 0) {
+            setActiveChapter(defaultManuscript.content.chapters[0].id)
+          }
+        } catch (error) {
+          console.error('Failed to load manuscript:', error)
+        }
+      }
+    }
+    
+    initializeManuscript()
+  }, [manuscript, setManuscript, setActiveChapter])
 
   // Enable global keyboard shortcuts
   useGlobalShortcuts()
@@ -56,7 +90,7 @@ export function ProfessionalEditor({ manuscriptId }: ProfessionalEditorProps) {
   // Handle custom events from global shortcuts
   useEffect(() => {
     const handleGlobalSave = () => {
-      saveCurrentScene()
+      saveManuscript()
     }
 
     const handleGlobalFind = () => {
@@ -91,7 +125,7 @@ export function ProfessionalEditor({ manuscriptId }: ProfessionalEditorProps) {
       document.removeEventListener('global-toggle-focus-mode', handleGlobalToggleFocusMode)
       document.removeEventListener('global-ai-analysis', handleGlobalAIAnalysis)
     }
-  }, [saveCurrentScene, selectedText])
+  }, [saveManuscript, selectedText])
 
   // Handle text selection for context menus
   useEffect(() => {
@@ -156,214 +190,223 @@ export function ProfessionalEditor({ manuscriptId }: ProfessionalEditorProps) {
     )
   }
 
+  // Render different interfaces based on editor mode
+  const renderEditorContent = () => {
+    switch (editorMode) {
+      case 'reorder':
+        return <ChapterReorderPanel />
+      case 'compare':
+        return (
+          <div className="flex h-full">
+            <div className="flex-1">
+              <ChapterReorderPanel />
+            </div>
+            <div className="w-80 border-l">
+              <VersionControlPanel />
+            </div>
+          </div>
+        )
+      case 'edit':
+      default:
+        return (
+          <ErrorBoundary
+            onError={(error, errorInfo) => {
+              console.error('Editor error:', error, errorInfo)
+              // Log to store or external service
+            }}
+          >
+            <ContextMenu>
+              <ContextMenuTrigger asChild>
+                <div className="flex-1 overflow-hidden">
+                  <EditorErrorBoundary>
+                    <TiptapEditor
+                      ref={editorRef}
+                      content={editorContent}
+                      onChange={(content) => {
+                        if (activeChapterId) {
+                          updateChapterContent(activeChapterId, content)
+                        }
+                      }}
+                      manuscriptId={manuscriptId}
+                      sceneId={activeChapterId || undefined}
+                      onSave={saveManuscript}
+                      placeholder="Begin writing your story..."
+                      className={`
+                        ${manuscript?.settings.enableConsistencyChecking ? 'consistency-mode' : ''}
+                      `}
+                    />
+                  </EditorErrorBoundary>
+                </div>
+              </ContextMenuTrigger>
+              
+              <ContextMenuContent className="w-64">
+                {selectedText && (
+                  <>
+                    <ContextMenuItem onClick={() => handleContextMenuAction('cut')}>
+                      <Scissors className="mr-2 h-4 w-4" />
+                      Cut
+                      <ContextMenuShortcut>Ctrl+X</ContextMenuShortcut>
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => handleContextMenuAction('copy')}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy
+                      <ContextMenuShortcut>Ctrl+C</ContextMenuShortcut>
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger>
+                        <Bold className="mr-2 h-4 w-4" />
+                        Format
+                      </ContextMenuSubTrigger>
+                      <ContextMenuSubContent className="w-48">
+                        <ContextMenuItem onClick={() => handleContextMenuAction('bold')}>
+                          <Bold className="mr-2 h-4 w-4" />
+                          Bold
+                          <ContextMenuShortcut>Ctrl+B</ContextMenuShortcut>
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => handleContextMenuAction('italic')}>
+                          <Italic className="mr-2 h-4 w-4" />
+                          Italic
+                          <ContextMenuShortcut>Ctrl+I</ContextMenuShortcut>
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => handleContextMenuAction('underline')}>
+                          <Underline className="mr-2 h-4 w-4" />
+                          Underline
+                          <ContextMenuShortcut>Ctrl+U</ContextMenuShortcut>
+                        </ContextMenuItem>
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+                    
+                    <ContextMenuSeparator />
+                    
+                    <ContextMenuItem onClick={() => handleContextMenuAction('comment')}>
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Add Comment
+                      <ContextMenuShortcut>Ctrl+Alt+M</ContextMenuShortcut>
+                    </ContextMenuItem>
+                    
+                    <ContextMenuItem onClick={() => handleContextMenuAction('analyze')}>
+                      <Zap className="mr-2 h-4 w-4" />
+                      AI Analysis
+                      <ContextMenuShortcut>Ctrl+Shift+A</ContextMenuShortcut>
+                    </ContextMenuItem>
+                    
+                    <ContextMenuSeparator />
+                    
+                    <ContextMenuItem onClick={() => handleContextMenuAction('lookup')}>
+                      <Search className="mr-2 h-4 w-4" />
+                      Look Up
+                    </ContextMenuItem>
+                    
+                    <ContextMenuItem onClick={() => handleContextMenuAction('bookmark')}>
+                      <Bookmark className="mr-2 h-4 w-4" />
+                      Bookmark
+                    </ContextMenuItem>
+                  </>
+                )}
+                
+                {!selectedText && (
+                  <>
+                    <ContextMenuItem onClick={() => handleContextMenuAction('paste')}>
+                      <ClipboardPaste className="mr-2 h-4 w-4" />
+                      Paste
+                      <ContextMenuShortcut>Ctrl+V</ContextMenuShortcut>
+                    </ContextMenuItem>
+                    
+                    <ContextMenuSeparator />
+                    
+                    <ContextMenuItem onClick={() => setShowFindReplace(true)}>
+                      <Search className="mr-2 h-4 w-4" />
+                      Find & Replace
+                      <ContextMenuShortcut>Ctrl+H</ContextMenuShortcut>
+                    </ContextMenuItem>
+                    
+                    <ContextMenuSeparator />
+                    
+                    <ContextMenuItem>
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Insert Scene Break
+                      <ContextMenuShortcut>Ctrl+Shift+Enter</ContextMenuShortcut>
+                    </ContextMenuItem>
+                    
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger>
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        Insert
+                      </ContextMenuSubTrigger>
+                      <ContextMenuSubContent className="w-48">
+                        <ContextMenuItem>
+                          Chapter Division
+                        </ContextMenuItem>
+                        <ContextMenuItem>
+                          Scene Break
+                        </ContextMenuItem>
+                        <ContextMenuItem>
+                          Page Break
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem>
+                          Today's Date
+                        </ContextMenuItem>
+                        <ContextMenuItem>
+                          Word Count
+                        </ContextMenuItem>
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+                  </>
+                )}
+              </ContextMenuContent>
+            </ContextMenu>
+
+            {/* Find and Replace Dialog */}
+            {showFindReplace && (
+              <div className="absolute top-4 right-4 bg-background border border-border rounded-lg p-4 shadow-lg z-50">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium">Find & Replace</h3>
+                    <button
+                      onClick={() => setShowFindReplace(false)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Find..."
+                      className="w-full px-2 py-1 text-sm border border-border rounded"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Replace with..."
+                      className="w-full px-2 py-1 text-sm border border-border rounded"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded">
+                      Find Next
+                    </button>
+                    <button className="px-3 py-1 text-xs bg-secondary text-secondary-foreground rounded">
+                      Replace
+                    </button>
+                    <button className="px-3 py-1 text-xs bg-secondary text-secondary-foreground rounded">
+                      Replace All
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </ErrorBoundary>
+        )
+    }
+  }
+
   return (
     <MainLayout>
       <div className="h-full flex flex-col">
-        {/* Editor Container with Context Menu */}
-        <ErrorBoundary
-          onError={(error, errorInfo) => {
-            console.error('Editor error:', error, errorInfo)
-            // Log to store or external service
-          }}
-        >
-          <ContextMenu>
-            <ContextMenuTrigger asChild>
-              <div className="flex-1 overflow-hidden">
-                <ErrorBoundary
-                  onError={(error, errorInfo) => {
-                    console.error('TiptapEditor error:', error, errorInfo)
-                  }}
-                  fallback={
-                    <div className="flex items-center justify-center min-h-[500px] text-muted-foreground">
-                      <div className="text-center space-y-2">
-                        <p>Editor failed to load</p>
-                        <button 
-                          onClick={() => window.location.reload()}
-                          className="text-sm underline hover:no-underline"
-                        >
-                          Reload editor
-                        </button>
-                      </div>
-                    </div>
-                  }
-                >
-                  <TiptapEditor
-                    ref={editorRef}
-                    content={editorContent}
-                    onChange={setEditorContent}
-                    manuscriptId={manuscriptId}
-                    sceneId={activeSceneId || undefined}
-                    onSave={saveCurrentScene}
-                    placeholder="Begin writing your story..."
-                    className={`
-                      ${editorSettings.focusMode ? 'focus-mode' : ''}
-                      ${editorSettings.typewriterMode ? 'typewriter-mode' : ''}
-                    `}
-                  />
-                </ErrorBoundary>
-              </div>
-            </ContextMenuTrigger>
-          
-          <ContextMenuContent className="w-64">
-            {selectedText && (
-              <>
-                <ContextMenuItem onClick={() => handleContextMenuAction('cut')}>
-                  <Scissors className="mr-2 h-4 w-4" />
-                  Cut
-                  <ContextMenuShortcut>Ctrl+X</ContextMenuShortcut>
-                </ContextMenuItem>
-                <ContextMenuItem onClick={() => handleContextMenuAction('copy')}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy
-                  <ContextMenuShortcut>Ctrl+C</ContextMenuShortcut>
-                </ContextMenuItem>
-                <ContextMenuSeparator />
-                
-                <ContextMenuSub>
-                  <ContextMenuSubTrigger>
-                    <Bold className="mr-2 h-4 w-4" />
-                    Format
-                  </ContextMenuSubTrigger>
-                  <ContextMenuSubContent className="w-48">
-                    <ContextMenuItem onClick={() => handleContextMenuAction('bold')}>
-                      <Bold className="mr-2 h-4 w-4" />
-                      Bold
-                      <ContextMenuShortcut>Ctrl+B</ContextMenuShortcut>
-                    </ContextMenuItem>
-                    <ContextMenuItem onClick={() => handleContextMenuAction('italic')}>
-                      <Italic className="mr-2 h-4 w-4" />
-                      Italic
-                      <ContextMenuShortcut>Ctrl+I</ContextMenuShortcut>
-                    </ContextMenuItem>
-                    <ContextMenuItem onClick={() => handleContextMenuAction('underline')}>
-                      <Underline className="mr-2 h-4 w-4" />
-                      Underline
-                      <ContextMenuShortcut>Ctrl+U</ContextMenuShortcut>
-                    </ContextMenuItem>
-                  </ContextMenuSubContent>
-                </ContextMenuSub>
-                
-                <ContextMenuSeparator />
-                
-                <ContextMenuItem onClick={() => handleContextMenuAction('comment')}>
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Add Comment
-                  <ContextMenuShortcut>Ctrl+Alt+M</ContextMenuShortcut>
-                </ContextMenuItem>
-                
-                <ContextMenuItem onClick={() => handleContextMenuAction('analyze')}>
-                  <Zap className="mr-2 h-4 w-4" />
-                  AI Analysis
-                  <ContextMenuShortcut>Ctrl+Shift+A</ContextMenuShortcut>
-                </ContextMenuItem>
-                
-                <ContextMenuSeparator />
-                
-                <ContextMenuItem onClick={() => handleContextMenuAction('lookup')}>
-                  <Search className="mr-2 h-4 w-4" />
-                  Look Up
-                </ContextMenuItem>
-                
-                <ContextMenuItem onClick={() => handleContextMenuAction('bookmark')}>
-                  <Bookmark className="mr-2 h-4 w-4" />
-                  Bookmark
-                </ContextMenuItem>
-              </>
-            )}
-            
-            {!selectedText && (
-              <>
-                <ContextMenuItem onClick={() => handleContextMenuAction('paste')}>
-                  <ClipboardPaste className="mr-2 h-4 w-4" />
-                  Paste
-                  <ContextMenuShortcut>Ctrl+V</ContextMenuShortcut>
-                </ContextMenuItem>
-                
-                <ContextMenuSeparator />
-                
-                <ContextMenuItem onClick={() => setShowFindReplace(true)}>
-                  <Search className="mr-2 h-4 w-4" />
-                  Find & Replace
-                  <ContextMenuShortcut>Ctrl+H</ContextMenuShortcut>
-                </ContextMenuItem>
-                
-                <ContextMenuSeparator />
-                
-                <ContextMenuItem>
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Insert Scene Break
-                  <ContextMenuShortcut>Ctrl+Shift+Enter</ContextMenuShortcut>
-                </ContextMenuItem>
-                
-                <ContextMenuSub>
-                  <ContextMenuSubTrigger>
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Insert
-                  </ContextMenuSubTrigger>
-                  <ContextMenuSubContent className="w-48">
-                    <ContextMenuItem>
-                      Chapter Division
-                    </ContextMenuItem>
-                    <ContextMenuItem>
-                      Scene Break
-                    </ContextMenuItem>
-                    <ContextMenuItem>
-                      Page Break
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
-                    <ContextMenuItem>
-                      Today's Date
-                    </ContextMenuItem>
-                    <ContextMenuItem>
-                      Word Count
-                    </ContextMenuItem>
-                  </ContextMenuSubContent>
-                </ContextMenuSub>
-              </>
-            )}
-          </ContextMenuContent>
-          </ContextMenu>
-        </ErrorBoundary>
-
-        {/* Find and Replace Dialog */}
-        {showFindReplace && (
-          <div className="absolute top-4 right-4 bg-background border border-border rounded-lg p-4 shadow-lg z-50">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium">Find & Replace</h3>
-                <button
-                  onClick={() => setShowFindReplace(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  ×
-                </button>
-              </div>
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  placeholder="Find..."
-                  className="w-full px-2 py-1 text-sm border border-border rounded"
-                />
-                <input
-                  type="text"
-                  placeholder="Replace with..."
-                  className="w-full px-2 py-1 text-sm border border-border rounded"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded">
-                  Find Next
-                </button>
-                <button className="px-3 py-1 text-xs bg-secondary text-secondary-foreground rounded">
-                  Replace
-                </button>
-                <button className="px-3 py-1 text-xs bg-secondary text-secondary-foreground rounded">
-                  Replace All
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {renderEditorContent()}
       </div>
     </MainLayout>
   )

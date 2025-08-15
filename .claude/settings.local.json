@@ -22,7 +22,9 @@
       "Bash(echo:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(NEXT_LINT=false npm run build)",
+      "Bash(git rm:*)"
     ],
     "deny": []
   }

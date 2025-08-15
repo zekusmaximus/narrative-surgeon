@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Digital Shadows - Manuscript Editor',
-  description: 'Chapter reordering tool for techno-thriller manuscript',
+  title: 'Narrative Surgeon - Chapter Reordering Editor',
+  description: 'Professional manuscript editor for chapter reordering and consistency checking',
 }
 
 export default function RootLayout({

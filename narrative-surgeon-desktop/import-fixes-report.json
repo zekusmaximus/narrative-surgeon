@@ -1,24 +1,17 @@
 {
-  "timestamp": "2025-08-14T16:05:50.454Z",
-  "processedFiles": 3,
-  "totalFixes": 1,
-  "stubsCreated": [],
-  "fixes": [
+  "timestamp": "2025-08-14T21:35:44.455Z",
+  "fixedFiles": [],
+  "unchangedFiles": [],
+  "errors": [
     {
-      "file": "src\\app\\page.tsx",
-      "fixes": [
-        {
-          "type": "removed_usage",
-          "component": "ManuscriptsList",
-          "line": 58
-        },
-        {
-          "type": "removed_usage",
-          "component": "CreateManuscriptDialog",
-          "line": 68
-        }
-      ]
+      "file": "src/app/manuscripts/page.tsx",
+      "error": "ENOENT: no such file or directory, access 'C:\\Users\\zeke\\Projects\\narrative-surgeon\\narrative-surgeon-desktop\\src\\app\\manuscripts\\page.tsx'"
     }
   ],
-  "logFile": "import-fixes-1755187550406.log"
+  "summary": {
+    "totalFilesProcessed": 8,
+    "filesFixed": 0,
+    "filesUnchanged": 0,
+    "errors": 1
+  }
 }

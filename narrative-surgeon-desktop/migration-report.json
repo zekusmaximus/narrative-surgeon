@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-08-14T21:44:22.462Z",
+  "backups": [],
+  "updates": [
+    {
+      "file": "./src/app/manuscripts/[id]/editor/page.tsx",
+      "changes": "Updated store imports and usage"
+    },
+    {
+      "file": "./src/components/layout/MenuBar.tsx",
+      "changes": "Updated store imports and usage"
+    }
+  ],
+  "errors": [],
+  "summary": {
+    "filesBackedUp": 0,
+    "filesUpdated": 2,
+    "errors": 0
+  }
+}
