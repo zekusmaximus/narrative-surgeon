@@ -6,7 +6,6 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { useSingleManuscriptStore } from '@/store/singleManuscriptStore'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { SortableChapterItem } from './SortableChapterItem'
@@ -17,7 +16,6 @@ import {
   RotateCcw, 
   AlertTriangle, 
   CheckCircle, 
-  Eye,
   BookOpen
 } from 'lucide-react'
 import type { Chapter, ConsistencyCheck } from '@/types/single-manuscript'
@@ -26,7 +24,6 @@ export function ChapterReorderPanel() {
   const { 
     manuscript, 
     currentVersion, 
-    consistencyReport, 
     editorMode 
   } = useSingleManuscriptStore()
   

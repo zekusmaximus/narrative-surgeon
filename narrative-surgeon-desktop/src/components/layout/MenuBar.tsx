@@ -17,9 +17,7 @@ import { Button } from '@/components/ui/button'
 import { 
   Shuffle, 
   GitBranch, 
-  Save, 
-  FileDown,
-  Settings
+  Save
 } from 'lucide-react'
 
 interface MenuBarProps {

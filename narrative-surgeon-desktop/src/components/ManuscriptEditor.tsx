@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
-import type { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
@@ -12,6 +11,7 @@ import { ExportDialog } from './ExportDialog';
 import { DocumentOutline } from './DocumentOutline';
 import { WritingStats } from '@/components/WritingStats';
 import { TrackChangesSimple } from './extensions/TrackChangesSimple';
+import { useSingleManuscriptStore } from '@/store/singleManuscriptStore';
 import { 
   SaveIcon, 
   UndoIcon, 
@@ -69,7 +69,7 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
     createScene,
     deleteScene,
     renameScene
-  } = useManuscriptStore();
+  } = useSingleManuscriptStore();
 
   const manuscriptScenes = scenes.get(manuscript.id) || [];
 
@@ -205,7 +205,7 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
       await deleteScene(sceneId);
       // If we deleted the current scene, select the first available scene
       if (currentScene?.id === sceneId) {
-        const remainingScenes = manuscriptScenes.filter(s => s.id !== sceneId);
+        const remainingScenes = manuscriptScenes.filter((s: any) => s.id !== sceneId);
         if (remainingScenes.length > 0) {
           handleSceneSelect(remainingScenes[0]);
         } else {

@@ -1,7 +1,6 @@
 import { Extension, type CommandProps } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
-import { findWrapping } from '@tiptap/pm/transform';
 
 interface FindAndReplaceOptions {
   searchResultClass: string;

@@ -10,12 +10,13 @@ const createMockManuscript = (): TechnoThrillerManuscript => ({
   metadata: {
     title: 'Test Thriller',
     author: 'Test Author',
-    genre: 'Techno-Thriller',
+    genre: 'techno-thriller',
     wordCount: 80000,
-    targetLength: 90000,
+    characterCount: 350000,
+    chapterCount: 25,
     lastModified: new Date(),
     created: new Date(),
-    synopsis: 'A test techno-thriller for testing purposes'
+    version: '1.0'
   },
   content: {
     chapters: [
@@ -31,14 +32,15 @@ const createMockManuscript = (): TechnoThrillerManuscript => ({
           timeframe: 'Day 1, Morning',
           tensionLevel: 3,
           majorEvents: ['Discovers encrypted data'],
-          themes: ['Discovery', 'Technology']
+          techElements: ['Quantum computing'],
+          characterArcs: ['Sarah introduction']
         },
         dependencies: {
           introduces: ['Sarah Chen', 'Quantum computing', 'Encryption mystery'],
           requiredKnowledge: [],
-          references: []
-        },
-        revisionNotes: []
+          references: [],
+          continuityRules: ['Character consistency']
+        }
       },
       {
         id: 'ch2',
@@ -52,14 +54,15 @@ const createMockManuscript = (): TechnoThrillerManuscript => ({
           timeframe: 'Day 1, Afternoon',
           tensionLevel: 7,
           majorEvents: ['Marcus learns of breach', 'Sarah becomes target'],
-          themes: ['Surveillance', 'Danger']
+          techElements: ['NSA systems'],
+          characterArcs: ['Marcus introduction']
         },
         dependencies: {
           introduces: ['Marcus Webb', 'NSA involvement'],
           requiredKnowledge: ['Sarah Chen', 'Quantum computing'],
-          references: [{ chapterId: 'ch1', description: 'References the discovery' }]
-        },
-        revisionNotes: []
+          references: [{ targetChapterId: 'ch1', referenceType: 'plot', description: 'References the discovery', strength: 'strong' }],
+          continuityRules: ['Character consistency']
+        }
       },
       {
         id: 'ch3',
@@ -73,58 +76,62 @@ const createMockManuscript = (): TechnoThrillerManuscript => ({
           timeframe: 'Day 1, Evening',
           tensionLevel: 8,
           majorEvents: ['AI discovery', 'Network infiltration'],
-          themes: ['Artificial Intelligence', 'Discovery']
+          techElements: ['AI', 'Blockchain'],
+          characterArcs: ['Sarah development']
         },
         dependencies: {
           introduces: ['AI consciousness', 'Blockchain network'],
           requiredKnowledge: ['Sarah Chen', 'Quantum computing', 'Encryption mystery'],
-          references: [{ chapterId: 'ch1', description: 'Builds on initial discovery' }]
-        },
-        revisionNotes: []
+          references: [{ targetChapterId: 'ch1', referenceType: 'tech', description: 'Builds on initial discovery', strength: 'medium' }],
+          continuityRules: ['Tech consistency']
+        }
       }
     ],
     characters: [
       {
         id: 'sarah',
         name: 'Sarah Chen',
-        role: 'Protagonist',
+        role: 'protagonist',
         description: 'Quantum computing researcher at MIT',
         firstAppearance: 'ch1',
-        traits: ['Brilliant', 'Curious', 'Determined'],
-        relationships: []
+        techExpertise: ['Quantum computing', 'Cryptography']
       },
       {
         id: 'marcus',
         name: 'Marcus Webb',
-        role: 'Antagonist',
+        role: 'antagonist',
         description: 'NSA cyber security specialist',
         firstAppearance: 'ch2',
-        traits: ['Methodical', 'Ruthless', 'Patriotic'],
-        relationships: []
+        techExpertise: ['Cybersecurity', 'Network analysis']
       }
     ],
     locations: [
       {
         id: 'mit-lab',
         name: 'MIT Lab',
+        type: 'building',
         description: 'Quantum computing research laboratory',
         firstMention: 'ch1',
-        significance: 'Primary setting for discoveries'
+        significance: 'major'
       },
       {
         id: 'nsa-hq',
         name: 'NSA Headquarters',
+        type: 'building',
         description: 'National Security Agency headquarters',
         firstMention: 'ch2',
-        significance: 'Government surveillance center'
+        significance: 'major'
       }
     ]
   },
   settings: {
     autoSave: true,
-    autoSaveInterval: 30000,
+    autoSaveInterval: 30,
+    showWordCount: true,
+    showCharacterCount: true,
     enableConsistencyChecking: true,
-    enableTrackChanges: false
+    highlightInconsistencies: true,
+    defaultView: 'editor'
   },
   versions: new Map([
     ['v1', {
@@ -134,7 +141,7 @@ const createMockManuscript = (): TechnoThrillerManuscript => ({
       chapterOrder: ['ch1', 'ch2', 'ch3'],
       created: new Date(),
       isBaseVersion: true,
-      parentVersionId: null,
+      parentVersionId: undefined,
       changes: []
     }]
   ])
@@ -175,7 +182,7 @@ describe('ConsistencyEngine', () => {
     const problematicOrder = ['ch2', 'ch1', 'ch3']
     const checks = await engine.analyzeConsistency(problematicOrder)
     
-    const dependencyChecks = checks.filter(check => check.type === 'dependency')
+    const dependencyChecks = checks.filter(check => check.type === 'plot')
     expect(dependencyChecks.length).toBeGreaterThan(0)
     
     // Chapter 2 should have warnings about missing knowledge
@@ -342,8 +349,10 @@ describe('ExportEngine', () => {
       isBaseVersion: false,
       parentVersionId: 'v1',
       changes: [{
-        id: 'change1',
         type: 'reorder',
+        chapterId: 'ch2',
+        oldPosition: 2,
+        newPosition: 1,
         description: 'Moved chapter 2 to beginning',
         timestamp: new Date()
       }]

@@ -1,9 +1,7 @@
 import type { 
   Chapter, 
   TechnoThrillerManuscript, 
-  ConsistencyCheck,
-  Character,
-  Location
+  ConsistencyCheck
 } from '@/types/single-manuscript'
 
 export class ConsistencyEngine {
@@ -63,7 +61,7 @@ export class ConsistencyEngine {
         if (!introducedConcepts.has(required)) {
           checks.push({
             id: `knowledge-${chapter.id}-${required}`,
-            type: 'dependency',
+            type: 'plot',
             severity: 'warning',
             message: `Chapter ${i + 1} "${chapter.title}" requires knowledge of "${required}" which hasn't been introduced yet`,
             chapterIds: [chapter.id],
@@ -154,7 +152,7 @@ export class ConsistencyEngine {
           if (!isExplained) {
             checks.push({
               id: `tech-${chapter.id}-${tech}`,
-              type: 'technology',
+              type: 'tech',
               severity: 'info',
               message: `Chapter ${i + 1} uses "${tech}" without prior explanation`,
               chapterIds: [chapter.id],
@@ -180,16 +178,16 @@ export class ConsistencyEngine {
       
       // Check for plot references that haven't been established
       chapter.dependencies.references.forEach(ref => {
-        const referencedChapter = chapters.find(c => c.id === ref.chapterId)
+        const referencedChapter = chapters.find(c => c.id === ref.targetChapterId)
         if (referencedChapter) {
           const refIndex = chapters.indexOf(referencedChapter)
           if (refIndex > i) {
             checks.push({
-              id: `plot-ref-${chapter.id}-${ref.chapterId}`,
+              id: `plot-ref-${chapter.id}-${ref.targetChapterId}`,
               type: 'plot',
               severity: 'error',
               message: `Chapter ${i + 1} references events from Chapter ${refIndex + 1} which comes later`,
-              chapterIds: [chapter.id, ref.chapterId],
+              chapterIds: [chapter.id, ref.targetChapterId],
               suggestion: 'Reorder chapters to maintain chronological consistency',
               autoFixable: true
             })
@@ -278,7 +276,7 @@ export class ConsistencyEngine {
         if (tensionDrop > 4) {
           checks.push({
             id: `tension-drop-${currentChapter.id}`,
-            type: 'pacing',
+            type: 'plot',
             severity: 'info',
             message: `Large tension drop from Chapter ${i} to ${i + 1} (${previousChapter.metadata.tensionLevel} → ${currentChapter.metadata.tensionLevel})`,
             chapterIds: [previousChapter.id, currentChapter.id],
@@ -291,7 +289,7 @@ export class ConsistencyEngine {
         if (currentChapter.metadata.tensionLevel < 3 && previousChapter.metadata.tensionLevel < 3) {
           checks.push({
             id: `low-tension-${currentChapter.id}`,
-            type: 'pacing',
+            type: 'plot',
             severity: 'warning',
             message: `Chapters ${i} and ${i + 1} both have low tension levels`,
             chapterIds: [previousChapter.id, currentChapter.id],

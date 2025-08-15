@@ -94,11 +94,6 @@ export function PerformanceDashboard({ className, compact = false }: Performance
     ))
   }
 
-  const _getStatusColor = (value: number, threshold: number) => {
-    if (value >= threshold * 0.9) return 'text-red-500'
-    if (value >= threshold * 0.7) return 'text-yellow-500'
-    return 'text-green-500'
-  }
 
   const getAlertSeverityColor = (severity: string) => {
     switch (severity) {

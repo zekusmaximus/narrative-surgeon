@@ -21,8 +21,7 @@ import {
   Clock, 
   Eye, 
   Download,
-  Star,
-  MoreHorizontal
+  Star
 } from 'lucide-react'
 import type { ManuscriptVersion } from '@/types/single-manuscript'
 

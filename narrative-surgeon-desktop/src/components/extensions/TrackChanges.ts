@@ -1,7 +1,6 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey, EditorState, Transaction } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
-import { DOMParser } from '@tiptap/pm/model';
 
 interface TrackChangesOptions {
   authorName: string;
@@ -207,7 +206,7 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
         return true;
       },
 
-      acceptChange: (changeId: string) => ({ state, dispatch }: { state: EditorState; dispatch?: (tr: Transaction) => void }) => {
+      acceptChange: (changeId: string) => ({ state }: { state: EditorState; dispatch?: (tr: Transaction) => void }) => {
         const pluginState = trackChangesKey.getState(state);
         if (!pluginState) return false;
 
@@ -215,7 +214,7 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
         if (!change) return false;
 
         // Remove the decoration and change record
-        const newDecorations = pluginState.decorations.remove(
+        pluginState.decorations.remove(
           pluginState.decorations.find().filter((d: any) => d.spec['data-change-id'] === changeId)
         );
 

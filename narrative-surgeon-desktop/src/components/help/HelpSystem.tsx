@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@radix-ui/react-dialog'
+import { Dialog, DialogContent, DialogTitle } from '@radix-ui/react-dialog'
 import {
   HelpCircle,
   Search,
@@ -764,19 +764,17 @@ Query in small batches to test and refine your approach.`,
       {/* Article Reader Dialog */}
       <Dialog open={!!selectedArticle} onOpenChange={() => setSelectedArticle(null)}>
         <DialogContent className="max-w-4xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              {selectedArticle?.title}
-              <div className="flex items-center gap-2">
-                <Badge variant={
-                  selectedArticle?.difficulty === 'beginner' ? 'default' :
-                  selectedArticle?.difficulty === 'intermediate' ? 'secondary' : 'destructive'
-                }>
-                  {selectedArticle?.difficulty}
-                </Badge>
-              </div>
-            </DialogTitle>
-          </DialogHeader>
+          <DialogTitle className="flex items-center justify-between mb-4">
+            {selectedArticle?.title}
+            <div className="flex items-center gap-2">
+              <Badge variant={
+                selectedArticle?.difficulty === 'beginner' ? 'default' :
+                selectedArticle?.difficulty === 'intermediate' ? 'secondary' : 'destructive'
+              }>
+                {selectedArticle?.difficulty}
+              </Badge>
+            </div>
+          </DialogTitle>
           <ScrollArea className="h-[60vh]">
             <div className="prose dark:prose-invert max-w-none">
               {selectedArticle?.content.split('\n').map((paragraph, index) => {

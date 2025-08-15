@@ -52,7 +52,7 @@ const SceneBreak = Node.create({
 
   addCommands() {
     return {
-      insertSceneBreak: () => ({ commands }: { commands: any }) => {
+      insertSceneBreak: () => ({ commands }: any) => {
         return commands.insertContent({ type: this.name })
       },
     }
@@ -61,7 +61,7 @@ const SceneBreak = Node.create({
   addKeyboardShortcuts() {
     return {
       'Mod-Shift-Enter': () => {
-        return this.editor.commands.insertSceneBreak?.()
+        return (this.editor.commands as any).insertSceneBreak()
       },
     }
   },
@@ -116,7 +116,7 @@ const ChapterDivision = Node.create({
   addCommands() {
     return {
       insertChapterDivision: (attrs: { number?: number; title?: string }) => 
-        ({ commands }: { commands: any }) => {
+        ({ commands }: any) => {
         return commands.insertContent({
           type: this.name,
           attrs,
@@ -317,29 +317,29 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
       },
       insertSceneBreak: () => {
         if (!editor?.commands) return false
-        return editor.commands.insertSceneBreak?.() || false
+        return (editor.commands as any).insertSceneBreak?.() || false
       },
       insertChapterDivision: (number: number, title?: string) => {
         if (!editor?.commands) return false
-        return editor.commands.insertChapterDivision?.({ number, title }) || false
+        return (editor.commands as any).insertChapterDivision?.({ number, title }) || false
       },
       focus: () => {
         if (!editor?.commands) return false
-        return editor.commands.focus('end')
+        return (editor.commands as any).focus('end')
       },
       blur: () => {
         if (!editor?.commands) return false
-        return editor.commands.blur()
+        return (editor.commands as any).blur()
       },
       getHTML: () => editor?.getHTML() || '',
       getText: () => editor?.getText() || '',
       setContent: (content: string) => {
         if (!editor?.commands) return false
-        return editor.commands.setContent(content, false)
+        return (editor.commands as any).setContent(content, false)
       },
       insertText: (text: string) => {
         if (!editor?.commands) return false
-        return editor.commands.insertContent(text)
+        return (editor.commands as any).insertContent(text)
       },
       find: (searchTerm: string) => {
         // TODO: Implement find functionality with proper search API
@@ -359,7 +359,7 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
         setIsUpdatingContent(true)
         
         // Set content without emitting update to prevent circular updates
-        editor.commands.setContent(content, false)
+        ;(editor.commands as any).setContent(content, false)
         
         // Reset flag after update is processed
         setTimeout(() => setIsUpdatingContent(false), 0)
@@ -371,7 +371,7 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
      */
     useEffect(() => {
       if (editor && !readOnly) {
-        editor.commands.focus('end')
+        ;(editor.commands as any).focus('end')
       }
     }, [editor, readOnly])
 
