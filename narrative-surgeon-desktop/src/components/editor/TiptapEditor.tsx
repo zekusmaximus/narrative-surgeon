@@ -12,7 +12,7 @@ import Color from '@tiptap/extension-color'
 import { TextStyle } from '@tiptap/extension-text-style'
 import CharacterCount from '@tiptap/extension-character-count'
 import Placeholder from '@tiptap/extension-placeholder'
-import Focus from '@tiptap/extension-focus'
+// import Focus from '@tiptap/extension-focus'
 import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import TaskList from '@tiptap/extension-task-list'
@@ -221,6 +221,9 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
      */
     const [isUpdatingContent, setIsUpdatingContent] = useState(false)
     const lastContentRef = useRef<string>('')
+    
+    // Clean className to prevent DOM token errors
+    const cleanClassName = className.replace(/[\r\n\t\f\v]/g, ' ').replace(/\s+/g, ' ').trim()
 
     /**
      * RACE CONDITION FIX: Debounced onChange to prevent excessive updates
@@ -233,15 +236,14 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
     }, [onChange])
 
     const editor = useEditor({
+      immediatelyRender: false,
       extensions: [
         StarterKit,
         Underline,
         TextAlign.configure({
           types: ['heading', 'paragraph'],
         }),
-        Highlight.configure({
-          multicolor: true,
-        }),
+        Highlight,
         Color.configure({
           types: ['textStyle'],
         }),
@@ -251,10 +253,10 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
           placeholder,
           emptyEditorClass: 'is-editor-empty',
         }),
-        Focus.configure({
-          className: 'has-focus',
-          mode: 'all',
-        }),
+        // Focus.configure({
+        //   className: 'has-focus',
+        //   mode: 'all',
+        // }),
         Subscript,
         Superscript,
         TaskList,
@@ -281,7 +283,7 @@ export const TiptapEditor = forwardRef<EditorRef, EditorProps>(
       },
       editorProps: {
         attributes: {
-          class: `prose prose-lg max-w-none min-h-[500px] px-6 py-4 focus:outline-none manuscript-editor ${className}`,
+          class: `prose prose-lg max-w-none min-h-[500px] px-6 py-4 focus:outline-none manuscript-editor ${cleanClassName}`.trim().replace(/\s+/g, ' '),
           spellcheck: 'true',
         },
         handleKeyDown: (_view: EditorView, event: KeyboardEvent) => {
