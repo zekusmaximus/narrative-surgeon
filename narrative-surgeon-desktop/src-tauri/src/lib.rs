@@ -4,7 +4,7 @@ pub mod window;
 pub mod menu;
 pub mod export;
 pub mod error;
-pub mod commands;
+// pub mod commands;  // Temporarily disabled until database layer is complete
 
 use tauri_plugin_sql::{Builder as SqlBuilder, Migration, MigrationKind};
 use tauri::Manager;
@@ -29,17 +29,22 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
-            db::get_manuscripts,
+            db::get_all_manuscripts,
+            db::get_manuscript,
             db::create_manuscript,
-            db::get_scenes,
-            db::update_scene,
+            db::update_manuscript,
             db::delete_manuscript,
+            db::get_manuscript_scenes,
+            db::get_scene,
             db::create_scene,
+            db::update_scene,
             db::delete_scene,
             db::rename_scene,
             db::reorder_scenes,
+            db::search_content,
+            db::create_database_backup,
             fs::import_manuscript_file,
-            fs::export_manuscript,
+            fs::export_manuscript_file,
             fs::open_file_dialog,
             fs::save_file_dialog,
             fs::batch_import_files,
@@ -58,11 +63,6 @@ pub fn run() {
             export::export_manuscript,
             export::get_export_formats,
             export::validate_export_options,
-            db::search_content,
-            db::create_database_backup,
-            db::log_writing_session,
-            db::get_writing_analytics,
-            db::get_performance_metrics
         ])
         .setup(|app| {
             // Initialize database service
@@ -76,8 +76,9 @@ pub fn run() {
             Ok(())
         })
         .on_menu_event(|app, event| {
+            let app = app.clone();
             tauri::async_runtime::spawn(async move {
-                if let Err(e) = menu::handle_menu_event(app, event).await {
+                if let Err(e) = menu::handle_menu_event(&app, event).await {
                     eprintln!("Menu event error: {}", e);
                 }
             });

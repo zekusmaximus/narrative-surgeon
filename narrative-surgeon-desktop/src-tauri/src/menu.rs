@@ -1,6 +1,6 @@
 use tauri::{
-    menu::{Menu, MenuBuilder, MenuItem, MenuItemBuilder, SubmenuBuilder, AboutMetadata},
-    AppHandle, Manager, Wry
+    menu::{Menu, MenuBuilder, MenuItemBuilder, SubmenuBuilder, PredefinedMenuItem},
+    AppHandle, Wry
 };
 use tauri::Emitter;
 
@@ -107,16 +107,16 @@ fn create_file_menu(app_handle: &AppHandle) -> Result<tauri::menu::Submenu<Wry>,
             &new_manuscript,
             &open_manuscript,
             &open_recent,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &save,
             &save_as,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &import_submenu,
             &export_submenu,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &print,
             &print_preview,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &quit,
         ])
         .build()?;
@@ -173,13 +173,13 @@ fn create_edit_menu(app_handle: &AppHandle) -> Result<tauri::menu::Submenu<Wry>,
         .items(&[
             &undo,
             &redo,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &cut,
             &copy,
             &paste,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &select_all,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &find,
             &find_next,
             &find_previous,
@@ -242,15 +242,15 @@ fn create_view_menu(app_handle: &AppHandle) -> Result<tauri::menu::Submenu<Wry>,
             &zoom_in,
             &zoom_out,
             &zoom_reset,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &focus_mode,
             &distraction_free,
             &typewriter_mode,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &split_view_horizontal,
             &split_view_vertical,
             &close_split,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &show_document_outline,
             &show_writing_stats,
             &floating_notes,
@@ -301,11 +301,11 @@ fn create_manuscript_menu(app_handle: &AppHandle) -> Result<tauri::menu::Submenu
             &analyze_full,
             &quick_ai_suggestion,
             &scene_comparison,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &statistics,
             &word_frequency,
             &reading_time,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &version_history,
             &backup_create,
             &backup_restore,
@@ -346,11 +346,11 @@ fn create_tools_menu(app_handle: &AppHandle) -> Result<tauri::menu::Submenu<Wry>
             &preferences,
             &ai_settings,
             &export_settings,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &keyboard_shortcuts,
             &plugin_manager,
             &theme_editor,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &custom_dictionary,
             &manuscript_templates,
         ])
@@ -390,10 +390,10 @@ fn create_help_menu(app_handle: &AppHandle) -> Result<tauri::menu::Submenu<Wry>,
             &keyboard_shortcuts_help,
             &video_tutorials,
             &community_forum,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &report_bug,
             &feature_request,
-            &MenuItem::Separator,
+            &PredefinedMenuItem::separator(app_handle).unwrap(),
             &check_updates,
             &about,
         ])
@@ -496,7 +496,7 @@ pub async fn handle_menu_event(
         
         // Default case
         _ => {
-            println!("Unhandled menu event: {}", event.id);
+            println!("Unhandled menu event: {:?}", event.id);
         }
     }
     

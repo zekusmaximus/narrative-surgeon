@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, WindowBuilder, WindowUrl};
+use tauri::{AppHandle, Manager, WebviewWindowBuilder};
 use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -54,21 +54,19 @@ pub async fn open_comparison_window(
 
     let url = format!("/comparison?scene1={}&scene2={}", scene1_id, scene2_id);
     
-    let window = WindowBuilder::new(
-        &app_handle,
-        &window_label,
-        WindowUrl::App(url.into())
-    )
+    let window = WebviewWindowBuilder::new(&app_handle, &window_label, tauri::WebviewUrl::App(url.into()))
     .title(&config.title)
     .inner_size(config.width, config.height)
     .resizable(config.resizable)
     .always_on_top(config.always_on_top);
 
-    if let (Some(x), Some(y)) = (config.x, config.y) {
-        window.position(x, y).build().map_err(|e| e.to_string())?;
+    let window_builder = if let (Some(x), Some(y)) = (config.x, config.y) {
+        window.position(x, y)
     } else {
-        window.center().build().map_err(|e| e.to_string())?;
-    }
+        window.center()
+    };
+    
+    window_builder.build().map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -94,11 +92,7 @@ pub async fn open_floating_notes(app_handle: AppHandle) -> Result<(), String> {
         ..Default::default()
     };
 
-    let window = WindowBuilder::new(
-        &app_handle,
-        window_label,
-        WindowUrl::App("/floating-notes".into())
-    )
+    let window = WebviewWindowBuilder::new(&app_handle, window_label, tauri::WebviewUrl::App("/floating-notes".into()))
     .title(&config.title)
     .inner_size(config.width, config.height)
     .resizable(config.resizable)
@@ -107,18 +101,20 @@ pub async fn open_floating_notes(app_handle: AppHandle) -> Result<(), String> {
     .transparent(false);
 
     // Position floating notes window to the right side of screen
-    if let Ok(primary_monitor) = app_handle.primary_monitor() {
+    let window_builder = if let Ok(primary_monitor) = app_handle.primary_monitor() {
         if let Some(monitor) = primary_monitor {
             let monitor_size = monitor.size();
             let x = monitor_size.width as f64 - config.width - 50.0;
             let y = 100.0;
-            window.position(x, y).build().map_err(|e| e.to_string())?;
+            window.position(x, y)
         } else {
-            window.center().build().map_err(|e| e.to_string())?;
+            window.center()
         }
     } else {
-        window.center().build().map_err(|e| e.to_string())?;
-    }
+        window.center()
+    };
+    
+    window_builder.build().map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -144,11 +140,7 @@ pub async fn open_distraction_free_mode(app_handle: AppHandle) -> Result<(), Str
         ..Default::default()
     };
 
-    let window = WindowBuilder::new(
-        &app_handle,
-        window_label,
-        WindowUrl::App("/distraction-free".into())
-    )
+    let window = WebviewWindowBuilder::new(&app_handle, window_label, tauri::WebviewUrl::App("/distraction-free".into()))
     .title(&config.title)
     .inner_size(config.width, config.height)
     .resizable(config.resizable)
@@ -267,6 +259,6 @@ pub async fn get_window_info(
 
 #[tauri::command]
 pub async fn list_windows(app_handle: AppHandle) -> Result<Vec<String>, String> {
-    let windows: Vec<String> = app_handle.windows().keys().cloned().collect();
+    let windows: Vec<String> = app_handle.webview_windows().keys().cloned().collect();
     Ok(windows)
 }

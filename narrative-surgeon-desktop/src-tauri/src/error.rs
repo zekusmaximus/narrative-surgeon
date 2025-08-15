@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::fmt;
 use thiserror::Error;
 use chrono::{DateTime, Utc};
 use std::fs::OpenOptions;

@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use std::fs;
 use chrono::{DateTime, Utc};
 use anyhow::{Result, anyhow};
-use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ExportFormat {
@@ -253,7 +252,7 @@ impl ExportService {
         if let Some(author) = &content.author {
             output.push_str(&format!("by\n\n{}\n", author));
         }
-        output.push_str("\f"); // Form feed for new page
+        output.push_str("\x0C"); // Form feed for new page
 
         // Content
         let mut current_chapter = 0;
@@ -262,7 +261,7 @@ impl ExportService {
             if let Some(chapter_num) = scene.chapter_number {
                 if chapter_num != current_chapter {
                     if current_chapter > 0 {
-                        output.push_str("\f"); // New page for new chapter
+                        output.push_str("\x0C"); // New page for new chapter
                     }
                     current_chapter = chapter_num;
                     
@@ -811,7 +810,7 @@ impl ExportService {
         if let Some(author) = &content.author {
             output.push_str(&format!("                        {}\n", author));
         }
-        output.push_str("\f"); // Form feed for new page
+        output.push_str("\x0C"); // Form feed for new page
 
         // 3. Content with proper headers and formatting
         let mut page_count = 2; // Start after title page
@@ -822,7 +821,7 @@ impl ExportService {
             if let Some(chapter_num) = scene.chapter_number {
                 if chapter_num != current_chapter {
                     if current_chapter > 0 {
-                        output.push_str("\f"); // New page for new chapter
+                        output.push_str("\x0C"); // New page for new chapter
                         page_count += 1;
                     }
                     current_chapter = chapter_num;
@@ -1098,7 +1097,7 @@ impl ExportService {
         if let Some(author) = &content.author {
             output.push_str(&format!("                        {}\n", author));
         }
-        output.push_str("\f"); // New page
+        output.push_str("\x0C"); // New page
 
         // Screenplay content
         output.push_str("FADE IN:\n\n");
