@@ -24,8 +24,10 @@
       "Bash(git commit:*)",
       "Bash(mv:*)",
       "Bash(NEXT_LINT=false npm run build)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(timeout 10 npm run dev)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }
