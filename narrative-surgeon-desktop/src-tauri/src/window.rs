@@ -140,7 +140,7 @@ pub async fn open_distraction_free_mode(app_handle: AppHandle) -> Result<(), Str
         ..Default::default()
     };
 
-    let window = WebviewWindowBuilder::new(&app_handle, window_label, tauri::WebviewUrl::App("/distraction-free".into()))
+    let _window = WebviewWindowBuilder::new(&app_handle, window_label, tauri::WebviewUrl::App("/distraction-free".into()))
     .title(&config.title)
     .inner_size(config.width, config.height)
     .resizable(config.resizable)

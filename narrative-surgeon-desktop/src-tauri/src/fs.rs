@@ -126,7 +126,7 @@ fn get_file_metadata(path: &Path) -> AppResult<(u64, String)> {
 
 // Enhanced file import with comprehensive error handling
 #[tauri::command]
-pub async fn import_manuscript_file(app: AppHandle, file_path: String) -> Result<FileImportResult, String> {
+pub async fn import_manuscript_file(_app: AppHandle, file_path: String) -> Result<FileImportResult, String> {
     let path = validate_file_path(&file_path).map_err(|e| e.to_string())?;
     
     let (file_size, modified_time) = get_file_metadata(&path).map_err(|e| e.to_string())?;
@@ -266,11 +266,11 @@ async fn import_markdown_file(path: &Path) -> AppResult<(String, FileMetadata, V
     
     // Enhanced HTML conversion with scene break detection
     let mut html_output = String::new();
-    let mut in_scene_break = false;
+    let _in_scene_break = false;
     
     let events: Vec<Event> = parser.collect();
     
-    for (i, event) in events.iter().enumerate() {
+    for (_i, event) in events.iter().enumerate() {
         match event {
             Event::Start(Tag::Heading { level: HeadingLevel::H1, .. }) => {
                 html_output.push_str("<h1>");
@@ -415,7 +415,7 @@ struct RtfParagraph {
     text: String,
     is_bold: bool,
     is_italic: bool,
-    is_heading: bool,
+    _is_heading: bool,
 }
 
 fn parse_rtf_content(rtf_content: &str) -> AppResult<(String, RtfFormattingInfo)> {
@@ -424,7 +424,7 @@ fn parse_rtf_content(rtf_content: &str) -> AppResult<(String, RtfFormattingInfo)
     let mut current_paragraph = String::new();
     let mut author = None;
     let mut title = None;
-    let mut has_complex_formatting = false;
+    let has_complex_formatting = false;
     
     // RTF parsing state
     let mut in_control = false;
@@ -603,12 +603,12 @@ async fn import_docx_file(path: &Path) -> AppResult<(String, FileMetadata, Vec<S
         ))?;
 
     let mut content = String::new();
-    let mut warnings = Vec::new();
+    let warnings = Vec::new();
 
     for document_child in docx.document.children {
         if let DocumentChild::Paragraph(paragraph) = document_child {
             let mut para_text = String::new();
-            let mut has_formatting = false;
+            let _has_formatting = false;
 
             for child in paragraph.children {
                 if let ParagraphChild::Run(run) = child {
@@ -687,7 +687,7 @@ async fn import_doc_file(path: &Path) -> AppResult<(String, FileMetadata, Vec<St
 // Helper functions for content processing
 fn convert_text_to_html(text: &str) -> String {
     let mut html = String::new();
-    let mut in_scene_break = false;
+    let _in_scene_break = false;
     
     for line in text.lines() {
         let trimmed = line.trim();
@@ -808,7 +808,7 @@ fn detect_chapters_enhanced(content: &str) -> Vec<ChapterInfo> {
     chapters
 }
 
-fn detect_scenes_enhanced(content: &str, chapters: &[ChapterInfo]) -> Vec<SceneInfo> {
+fn detect_scenes_enhanced(_content: &str, chapters: &[ChapterInfo]) -> Vec<SceneInfo> {
     let mut all_scenes = Vec::new();
     
     for (chapter_idx, chapter) in chapters.iter().enumerate() {
@@ -943,7 +943,7 @@ fn count_words_accurate(text: &str) -> u32 {
 // Export functions (keeping existing ones and enhancing DOCX)
 #[tauri::command]
 pub async fn export_manuscript_file(
-    app: AppHandle,
+    _app: AppHandle,
     content: String,
     file_path: String,
     format: String,
@@ -1094,7 +1094,7 @@ async fn export_as_docx_enhanced(content: &str, path: &Path) -> Result<(), Strin
     }
 
     // Write DOCX file 
-    let docx_result = docx.build();
+    let _docx_result = docx.build();
     
     // For now, create a simple placeholder DOCX content
     let placeholder_content = b"PK\x03\x04"; // DOCX file signature
@@ -1106,7 +1106,7 @@ async fn export_as_docx_enhanced(content: &str, path: &Path) -> Result<(), Strin
 }
 
 fn create_docx_paragraph(text: &str, formatting_stack: &[String]) -> Paragraph {
-    let mut para = Paragraph::new();
+    let para = Paragraph::new();
     let mut run = Run::new().add_text(text.trim());
     
     // Apply formatting from stack

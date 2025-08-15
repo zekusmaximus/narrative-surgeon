@@ -232,8 +232,8 @@ impl ExportService {
     ) -> Result<ExportResult> {
         // Industry standard manuscript formatting
         let mut output = String::new();
-        let mut warnings = Vec::new();
-        let mut errors = Vec::new();
+        let warnings = Vec::new();
+        let errors = Vec::new();
 
         // Header information
         if let Some(author) = &content.author {
@@ -313,8 +313,8 @@ impl ExportService {
         content: ManuscriptContent,
         options: ExportOptions,
     ) -> Result<ExportResult> {
-        let mut warnings = Vec::new();
-        let mut errors = Vec::new();
+        let warnings = Vec::new();
+        let errors = Vec::new();
 
         // Create DOCX content using docx-rs
         let docx_content = self.build_docx_content(&content, &options)?;
@@ -343,7 +343,7 @@ impl ExportService {
         options: ExportOptions,
     ) -> Result<ExportResult> {
         let mut warnings = Vec::new();
-        let mut errors = Vec::new();
+        let errors = Vec::new();
 
         // For PDF generation, we'd typically use a library like wkhtmltopdf or a Rust PDF library
         // For now, we'll create HTML and mention it needs conversion
@@ -372,7 +372,7 @@ impl ExportService {
         options: ExportOptions,
     ) -> Result<ExportResult> {
         let mut output = String::new();
-        let mut warnings = Vec::new();
+        let warnings = Vec::new();
         let errors = Vec::new();
 
         // Front matter
@@ -441,7 +441,7 @@ impl ExportService {
         options: ExportOptions,
     ) -> Result<ExportResult> {
         let mut output = String::new();
-        let mut warnings = Vec::new();
+        let warnings = Vec::new();
         let errors = Vec::new();
 
         // Document preamble
@@ -683,7 +683,7 @@ impl ExportService {
             .join("\n\n")
     }
 
-    fn build_docx_content(&self, content: &ManuscriptContent, options: &ExportOptions) -> Result<Vec<u8>> {
+    fn build_docx_content(&self, _content: &ManuscriptContent, _options: &ExportOptions) -> Result<Vec<u8>> {
         // This would use docx-rs library to create proper DOCX format
         // For now, return placeholder
         Ok(b"DOCX content placeholder".to_vec())
@@ -792,8 +792,8 @@ impl ExportService {
         options: ExportOptions,
     ) -> Result<ExportResult> {
         let mut output = String::new();
-        let mut warnings = Vec::new();
-        let mut errors = Vec::new();
+        let warnings = Vec::new();
+        let errors = Vec::new();
 
         // Shunn manuscript format requirements
         // 1. Header with author info (upper left)
@@ -1330,7 +1330,7 @@ pub async fn get_export_formats() -> Result<Vec<ExportFormat>, String> {
 
 #[tauri::command]
 pub async fn validate_export_options(options: ExportOptions) -> Result<Vec<String>, String> {
-    let mut warnings = Vec::new();
+    let warnings = Vec::new();
     
     // Validate output path
     if let Some(parent) = options.output_path.parent() {

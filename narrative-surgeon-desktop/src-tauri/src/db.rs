@@ -1,13 +1,10 @@
 use serde::{Deserialize, Serialize};
-use tauri_plugin_sql::{Migration, MigrationKind};
-use uuid::Uuid;
 use chrono::Utc;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use regex::Regex;
-use crate::error::{AppError, AppResult, retry_with_backoff, RetryConfig};
+use crate::error::{AppError, AppResult};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Manuscript {
@@ -150,7 +147,7 @@ impl DatabaseService {
 }
 
 // Validation functions
-fn validate_manuscript(manuscript: &Manuscript) -> AppResult<()> {
+fn _validate_manuscript(manuscript: &Manuscript) -> AppResult<()> {
     if manuscript.title.trim().is_empty() {
         return Err(AppError::validation_field(
             "Manuscript title cannot be empty",
@@ -170,7 +167,7 @@ fn validate_manuscript(manuscript: &Manuscript) -> AppResult<()> {
     Ok(())
 }
 
-fn validate_scene(scene: &Scene) -> AppResult<()> {
+fn _validate_scene(scene: &Scene) -> AppResult<()> {
     if scene.raw_text.trim().is_empty() {
         return Err(AppError::validation_field(
             "Scene content cannot be empty",
@@ -190,7 +187,7 @@ fn validate_scene(scene: &Scene) -> AppResult<()> {
     Ok(())
 }
 
-fn calculate_word_count(text: &str) -> u32 {
+fn _calculate_word_count(text: &str) -> u32 {
     text.split_whitespace().count() as u32
 }
 
