@@ -32,7 +32,9 @@
       "Bash(cargo doc:*)",
       "WebSearch",
       "Bash(npm uninstall:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(cargo clean:*)",
+      "Bash(timeout 15 npm run tauri dev)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
