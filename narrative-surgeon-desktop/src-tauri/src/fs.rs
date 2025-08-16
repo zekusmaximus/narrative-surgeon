@@ -507,7 +507,7 @@ fn parse_rtf_content(rtf_content: &str) -> AppResult<(String, RtfFormattingInfo)
             text: current_paragraph.trim().to_string(),
             is_bold: current_bold,
             is_italic: current_italic,
-            is_heading: false,
+            _is_heading: false,
         });
         plain_text.push_str(&current_paragraph);
     }
@@ -608,7 +608,7 @@ async fn import_docx_file(path: &Path) -> AppResult<(String, FileMetadata, Vec<S
     for document_child in docx.document.children {
         if let DocumentChild::Paragraph(paragraph) = document_child {
             let mut para_text = String::new();
-            let _has_formatting = false;
+            let mut has_formatting = false;
 
             for child in paragraph.children {
                 if let ParagraphChild::Run(run) = child {

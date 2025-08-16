@@ -543,7 +543,7 @@ impl ExportService {
         options: ExportOptions,
     ) -> Result<ExportResult> {
         // MOBI format requires kindlegen or similar tool
-        let mut warnings = vec!["MOBI export requires Amazon Kindle tools".to_string()];
+        let warnings = vec!["MOBI export requires Amazon Kindle tools".to_string()];
         let errors = Vec::new();
 
         // Export as HTML first
@@ -1330,7 +1330,7 @@ pub async fn get_export_formats() -> Result<Vec<ExportFormat>, String> {
 
 #[tauri::command]
 pub async fn validate_export_options(options: ExportOptions) -> Result<Vec<String>, String> {
-    let warnings = Vec::new();
+    let mut warnings = Vec::new();
     
     // Validate output path
     if let Some(parent) = options.output_path.parent() {
