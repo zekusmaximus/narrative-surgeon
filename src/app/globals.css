@@ -125,3 +125,51 @@
   float: left;
   height: 0;
 }
+
+/* Menu improvements */
+[data-radix-dropdown-content],
+[data-radix-context-content] {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.dark [data-radix-dropdown-content],
+.dark [data-radix-context-content] {
+  background: rgba(30, 30, 30, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Ensure menu items are visible */
+[data-radix-dropdown-item],
+[data-radix-context-item] {
+  min-height: 32px;
+  color: rgba(0, 0, 0, 0.9) !important;
+}
+
+.dark [data-radix-dropdown-item],
+.dark [data-radix-context-item] {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Menu hover states */
+[data-radix-dropdown-item]:hover,
+[data-radix-context-item]:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+  color: rgba(59, 130, 246, 1) !important;
+}
+
+.dark [data-radix-dropdown-item]:hover,
+.dark [data-radix-context-item]:hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: rgba(59, 130, 246, 1) !important;
+}
+
+/* Submenu improvements */
+[data-radix-dropdown-sub-content],
+[data-radix-context-sub-content] {
+  margin-left: 8px;
+  margin-top: -4px;
+}
