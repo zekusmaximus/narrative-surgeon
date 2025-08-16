@@ -1,0 +1,399 @@
+name: Deploy & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      force-deploy:
+        description: 'Force deployment (skip some checks)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: 20
+  RUST_TOOLCHAIN: stable
+
+jobs:
+  # Job 1: Pre-deployment Validation
+  pre-deploy:
+    name: Pre-deployment Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is-release: ${{ steps.release-check.outputs.is-release }}
+      environment: ${{ steps.env-check.outputs.environment }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          else
+            VERSION="dev-$(date +%Y%m%d)-${GITHUB_SHA:0:7}"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          fi
+          echo "Extracted version: $VERSION"
+
+      - name: Check if this is a release
+        id: release-check
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            echo "is-release=true" >> $GITHUB_OUTPUT
+          else
+            echo "is-release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine environment
+        id: env-check
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [[ $GITHUB_REF == refs/tags/* ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate version format
+        if: steps.release-check.outputs.is-release == 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format: $VERSION"
+            echo "Expected format: x.y.z (semantic versioning)"
+            exit 1
+          fi
+          echo "✅ Version format valid: $VERSION"
+
+  # Job 2: Build for Deployment
+  build-for-deploy:
+    name: Build for Deployment
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    needs: pre-deploy
+    
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux
+            arch: x86_64
+            ext: AppImage
+          - os: windows-latest
+            platform: windows
+            arch: x86_64
+            ext: msi
+          - os: macos-latest
+            platform: macos
+            arch: x86_64
+            ext: dmg
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'narrative-surgeon-desktop/package-lock.json'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: narrative-surgeon-desktop/src-tauri
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Install dependencies
+        working-directory: narrative-surgeon-desktop
+        run: npm ci
+
+      - name: Run production build
+        working-directory: narrative-surgeon-desktop
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Build Tauri application
+        working-directory: narrative-surgeon-desktop
+        run: npm run tauri build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Generate build info
+        run: |
+          echo "Build Information" > build-info.txt
+          echo "Version: ${{ needs.pre-deploy.outputs.version }}" >> build-info.txt
+          echo "Platform: ${{ matrix.platform }}-${{ matrix.arch }}" >> build-info.txt
+          echo "Build Date: $(date -u)" >> build-info.txt
+          echo "Commit: ${{ github.sha }}" >> build-info.txt
+          echo "Environment: ${{ needs.pre-deploy.outputs.environment }}" >> build-info.txt
+
+      - name: Create release package
+        run: |
+          mkdir -p release-package
+          cd narrative-surgeon-desktop/src-tauri/target/release/bundle
+          
+          # Find the built package
+          PACKAGE=$(find . -name "*.${{ matrix.ext }}" | head -1)
+          if [ -n "$PACKAGE" ]; then
+            cp "$PACKAGE" ../../../../release-package/
+            echo "Package created: $PACKAGE"
+          else
+            echo "❌ No package found with extension ${{ matrix.ext }}"
+            exit 1
+          fi
+
+      - name: Generate checksums
+        run: |
+          cd release-package
+          sha256sum * > checksums-${{ matrix.platform }}.txt
+          cat checksums-${{ matrix.platform }}.txt
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            release-package/
+            build-info.txt
+          retention-days: 90
+
+  # Job 3: Web Deployment (if applicable)
+  deploy-web:
+    name: Deploy Web Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: pre-deploy
+    if: needs.pre-deploy.outputs.environment == 'production' || needs.pre-deploy.outputs.environment == 'staging'
+    environment: ${{ needs.pre-deploy.outputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'narrative-surgeon-desktop/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: narrative-surgeon-desktop
+        run: npm ci
+
+      - name: Build web application
+        working-directory: narrative-surgeon-desktop
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_VERSION: ${{ needs.pre-deploy.outputs.version }}
+          NEXT_PUBLIC_ENVIRONMENT: ${{ needs.pre-deploy.outputs.environment }}
+
+      - name: Deploy to Vercel (staging)
+        if: needs.pre-deploy.outputs.environment == 'staging'
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: narrative-surgeon-desktop
+          scope: ${{ secrets.VERCEL_ORG_ID }}
+
+      - name: Deploy to Vercel (production)
+        if: needs.pre-deploy.outputs.environment == 'production'
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: narrative-surgeon-desktop
+          scope: ${{ secrets.VERCEL_ORG_ID }}
+
+  # Job 4: Create GitHub Release
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [pre-deploy, build-for-deploy]
+    if: needs.pre-deploy.outputs.is-release == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Generate release notes
+        id: release-notes
+        run: |
+          VERSION="${{ needs.pre-deploy.outputs.version }}"
+          
+          echo "## 🚀 Narrative Surgeon v$VERSION" > release-notes.md
+          echo "" >> release-notes.md
+          echo "### What's New" >> release-notes.md
+          echo "" >> release-notes.md
+          
+          # Extract changelog from commit messages (last release to current)
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            echo "### Changes since $LAST_TAG" >> release-notes.md
+            git log --pretty=format:"- %s (%h)" "$LAST_TAG"..HEAD >> release-notes.md
+          else
+            echo "- Initial release" >> release-notes.md
+          fi
+          
+          echo "" >> release-notes.md
+          echo "### Downloads" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "Choose the appropriate version for your operating system:" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "- **Windows**: \`.msi\` installer" >> release-notes.md
+          echo "- **macOS**: \`.dmg\` disk image" >> release-notes.md
+          echo "- **Linux**: \`.AppImage\` portable application" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "### Verification" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "All downloads include SHA256 checksums for verification." >> release-notes.md
+          
+          cat release-notes.md
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          
+          # Copy all built packages to release assets
+          find release-artifacts -name "*.msi" -exec cp {} release-assets/ \;
+          find release-artifacts -name "*.dmg" -exec cp {} release-assets/ \;
+          find release-artifacts -name "*.AppImage" -exec cp {} release-assets/ \;
+          find release-artifacts -name "checksums-*.txt" -exec cp {} release-assets/ \;
+          
+          # Create combined checksums file
+          cat release-assets/checksums-*.txt > release-assets/checksums.txt
+          
+          echo "Release assets prepared:"
+          ls -la release-assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.pre-deploy.outputs.version }}
+          name: Narrative Surgeon v${{ needs.pre-deploy.outputs.version }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: false
+          files: release-assets/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Job 5: Post-deployment Tasks
+  post-deploy:
+    name: Post-deployment Tasks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [pre-deploy, build-for-deploy, deploy-web, create-release]
+    if: always() && (needs.build-for-deploy.result == 'success')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Notify deployment status
+        run: |
+          VERSION="${{ needs.pre-deploy.outputs.version }}"
+          ENVIRONMENT="${{ needs.pre-deploy.outputs.environment }}"
+          
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** $ENVIRONMENT" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ needs.build-for-deploy.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.create-release.result }}" == "success" ]]; then
+            echo "**GitHub Release:** ✅ Created" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.deploy-web.result }}" == "success" ]]; then
+            echo "**Web Deployment:** ✅ Deployed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Update deployment status
+        if: needs.pre-deploy.outputs.environment == 'production'
+        run: |
+          # Could integrate with external monitoring/status page services here
+          echo "Production deployment completed for version ${{ needs.pre-deploy.outputs.version }}"
+
+      - name: Cleanup old artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const keepCount = 10; // Keep last 10 releases
+            const { data: releases } = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const oldReleases = releases.slice(keepCount);
+            for (const release of oldReleases) {
+              if (release.draft) {
+                console.log(`Deleting old draft release: ${release.tag_name}`);
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.id,
+                });
+              }
+            }

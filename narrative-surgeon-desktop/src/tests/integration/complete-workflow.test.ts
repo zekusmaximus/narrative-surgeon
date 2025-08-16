@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSingleManuscriptStore } from '@/store/singleManuscriptStore'
 import { ConsistencyEngine } from '@/lib/consistency-engine'

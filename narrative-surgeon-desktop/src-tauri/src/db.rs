@@ -42,6 +42,28 @@ pub struct Scene {
     pub updated_at: i64,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ModuleStatus {
+    pub scene_id: String,
+    pub events_v: Option<String>,
+    pub events_dirty: i32,
+    pub plants_v: Option<String>,
+    pub plants_dirty: i32,
+    pub state_v: Option<String>,
+    pub state_dirty: i32,
+    pub beats_v: Option<String>,
+    pub beats_dirty: i32,
+    pub last_processed: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateModuleStatusRequest {
+    pub scene_id: String,
+    pub module: String,
+    pub version: String,
+    pub dirty: bool,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchRequest {
     pub query: String,
@@ -269,6 +291,45 @@ pub async fn create_database_backup_impl(_app: &AppHandle) -> AppResult<BackupMe
     Err(AppError::database("Database operations not yet implemented"))
 }
 
+// MODULE STATUS OPERATIONS
+
+pub async fn get_dirty_scenes_impl(_app: &AppHandle) -> AppResult<Vec<String>> {
+    // TODO: Implement with SQLx
+    // Query: SELECT scene_id FROM module_status 
+    //        WHERE events_dirty = 1 OR plants_dirty = 1 OR state_dirty = 1 OR beats_dirty = 1
+    Err(AppError::database("Database operations not yet implemented"))
+}
+
+pub async fn get_module_status_impl(_app: &AppHandle, _scene_id: String) -> AppResult<Option<ModuleStatus>> {
+    // TODO: Implement with SQLx
+    // Query: SELECT * FROM module_status WHERE scene_id = ?
+    Err(AppError::database("Database operations not yet implemented"))
+}
+
+pub async fn mark_modules_dirty_impl(_app: &AppHandle, _scene_id: String, _modules: Vec<String>) -> AppResult<()> {
+    // TODO: Implement with SQLx
+    // Update specific module dirty flags to 1 for the given scene
+    Err(AppError::database("Database operations not yet implemented"))
+}
+
+pub async fn update_module_status_impl(_app: &AppHandle, _request: UpdateModuleStatusRequest) -> AppResult<()> {
+    // TODO: Implement with SQLx
+    // Update the specific module version and dirty flag
+    Err(AppError::database("Database operations not yet implemented"))
+}
+
+pub async fn get_scene_content_impl(_app: &AppHandle, _scene_id: String) -> AppResult<Option<String>> {
+    // TODO: Implement with SQLx
+    // Query: SELECT raw_text FROM scenes WHERE id = ?
+    Err(AppError::database("Database operations not yet implemented"))
+}
+
+pub async fn clear_all_dirty_flags_impl(_app: &AppHandle) -> AppResult<()> {
+    // TODO: Implement with SQLx
+    // Update: UPDATE module_status SET events_dirty = 0, plants_dirty = 0, state_dirty = 0, beats_dirty = 0
+    Err(AppError::database("Database operations not yet implemented"))
+}
+
 // TAURI COMMAND WRAPPERS
 
 #[tauri::command]
@@ -352,5 +413,43 @@ pub async fn search_content(app: AppHandle, request: SearchRequest) -> Result<Ve
 #[tauri::command]
 pub async fn create_database_backup(app: AppHandle) -> Result<BackupMetadata, String> {
     create_database_backup_impl(&app).await
+        .map_err(|e| e.to_string())
+}
+
+// MODULE STATUS TAURI COMMANDS
+
+#[tauri::command]
+pub async fn get_dirty_scenes(app: AppHandle) -> Result<Vec<String>, String> {
+    get_dirty_scenes_impl(&app).await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_module_status(app: AppHandle, scene_id: String) -> Result<Option<ModuleStatus>, String> {
+    get_module_status_impl(&app, scene_id).await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn mark_modules_dirty(app: AppHandle, scene_id: String, modules: Vec<String>) -> Result<(), String> {
+    mark_modules_dirty_impl(&app, scene_id, modules).await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn update_module_status(app: AppHandle, request: UpdateModuleStatusRequest) -> Result<(), String> {
+    update_module_status_impl(&app, request).await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_scene_content(app: AppHandle, scene_id: String) -> Result<Option<String>, String> {
+    get_scene_content_impl(&app, scene_id).await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn clear_all_dirty_flags(app: AppHandle) -> Result<(), String> {
+    clear_all_dirty_flags_impl(&app).await
         .map_err(|e| e.to_string())
 }

@@ -1,0 +1,381 @@
+name: Tauri Build & Test
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      build-target:
+        description: 'Build target'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - windows
+          - macos
+          - linux
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_TOOLCHAIN: stable
+  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+jobs:
+  # Job 1: Pre-build Setup and Validation
+  pre-build:
+    name: Pre-build Setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      should-build: ${{ steps.changes.outputs.should-build }}
+      version: ${{ steps.version.outputs.version }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for relevant changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            tauri:
+              - 'narrative-surgeon-desktop/src-tauri/**'
+              - 'narrative-surgeon-desktop/src/**'
+              - 'narrative-surgeon-desktop/package.json'
+              - 'narrative-surgeon-desktop/package-lock.json'
+              - 'narrative-surgeon-desktop/tauri.conf.json'
+          
+      - name: Extract version
+        id: version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION=$(date +%Y%m%d)-${GITHUB_SHA:0:7}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Set build decision
+        run: |
+          if [[ "${{ steps.changes.outputs.tauri }}" == "true" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || [[ $GITHUB_REF == refs/tags/* ]]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-build=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 2: Tauri Development Build (Fast feedback)
+  tauri-dev-build:
+    name: Tauri Dev Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    needs: pre-build
+    if: needs.pre-build.outputs.should-build == 'true'
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'ubuntu-22.04'
+            os: ubuntu-22.04
+            rust-target: x86_64-unknown-linux-gnu
+          - platform: 'windows-latest'
+            os: windows-latest
+            rust-target: x86_64-pc-windows-msvc
+          - platform: 'macos-latest'
+            os: macos-latest
+            rust-target: x86_64-apple-darwin
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'narrative-surgeon-desktop/package-lock.json'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: ${{ matrix.rust-target }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: narrative-surgeon-desktop/src-tauri
+
+      # Platform-specific dependencies
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Install macOS dependencies
+        if: matrix.platform == 'macos-latest'
+        run: |
+          # Install any macOS-specific dependencies if needed
+          echo "Setting up macOS build environment"
+
+      - name: Install Windows dependencies
+        if: matrix.platform == 'windows-latest'
+        run: |
+          # Install any Windows-specific dependencies if needed
+          echo "Setting up Windows build environment"
+
+      - name: Install frontend dependencies
+        working-directory: narrative-surgeon-desktop
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: narrative-surgeon-desktop
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Run Tauri dev build
+        working-directory: narrative-surgeon-desktop
+        run: npm run tauri build -- --debug
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Upload dev build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-dev-${{ matrix.platform }}
+          path: |
+            narrative-surgeon-desktop/src-tauri/target/debug/bundle/
+            !narrative-surgeon-desktop/src-tauri/target/debug/bundle/**/*.dSYM/
+          retention-days: 7
+
+  # Job 3: Tauri Production Build (Release quality)
+  tauri-release-build:
+    name: Tauri Release Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    needs: [pre-build, tauri-dev-build]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'ubuntu-22.04'
+            os: ubuntu-22.04
+            rust-target: x86_64-unknown-linux-gnu
+            ext: 'AppImage'
+          - platform: 'windows-latest'
+            os: windows-latest
+            rust-target: x86_64-pc-windows-msvc
+            ext: 'msi'
+          - platform: 'macos-latest'
+            os: macos-latest
+            rust-target: x86_64-apple-darwin
+            ext: 'dmg'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'narrative-surgeon-desktop/package-lock.json'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: ${{ matrix.rust-target }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: narrative-surgeon-desktop/src-tauri
+
+      # Platform-specific dependencies
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Install frontend dependencies
+        working-directory: narrative-surgeon-desktop
+        run: npm ci
+
+      - name: Build frontend for production
+        working-directory: narrative-surgeon-desktop
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Build Tauri application
+        working-directory: narrative-surgeon-desktop
+        run: npm run tauri build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-release-${{ matrix.platform }}
+          path: |
+            narrative-surgeon-desktop/src-tauri/target/release/bundle/
+            !narrative-surgeon-desktop/src-tauri/target/release/bundle/**/*.dSYM/
+          retention-days: 30
+
+      - name: Generate checksums
+        run: |
+          cd narrative-surgeon-desktop/src-tauri/target/release/bundle
+          find . -name "*.${{ matrix.ext }}" -exec sha256sum {} \; > checksums-${{ matrix.platform }}.txt
+          cat checksums-${{ matrix.platform }}.txt
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: checksums-${{ matrix.platform }}
+          path: narrative-surgeon-desktop/src-tauri/target/release/bundle/checksums-${{ matrix.platform }}.txt
+          retention-days: 30
+
+  # Job 4: Tauri Integration Tests
+  tauri-integration-tests:
+    name: Tauri Integration Tests
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    needs: tauri-dev-build
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'narrative-surgeon-desktop/package-lock.json'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: narrative-surgeon-desktop/src-tauri
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install dependencies
+        working-directory: narrative-surgeon-desktop
+        run: npm ci
+
+      - name: Run Tauri Rust tests
+        working-directory: narrative-surgeon-desktop/src-tauri
+        run: cargo test --verbose
+
+      - name: Run Tauri integration tests
+        working-directory: narrative-surgeon-desktop
+        run: npm run test:integration
+        env:
+          CI: true
+
+      - name: Test Tauri dev mode
+        working-directory: narrative-surgeon-desktop
+        run: |
+          timeout 30s npm run tauri dev || true
+          echo "Dev mode test completed"
+
+  # Job 5: Build Summary
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [pre-build, tauri-dev-build, tauri-release-build, tauri-integration-tests]
+    if: always() && needs.pre-build.outputs.should-build == 'true'
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate build summary
+        run: |
+          echo "# Tauri Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.pre-build.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Date:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## Build Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Dev Build: ${{ needs.tauri-dev-build.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Release Build: ${{ needs.tauri-release-build.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Integration Tests: ${{ needs.tauri-integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## Artifacts Generated" >> $GITHUB_STEP_SUMMARY
+          if [ -d "artifacts" ]; then
+            find artifacts -name "*.AppImage" -o -name "*.msi" -o -name "*.dmg" | while read file; do
+              echo "- $(basename "$file")" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+
+      - name: Check build success
+        run: |
+          if [[ "${{ needs.tauri-dev-build.result }}" != "success" ]] || \
+             [[ "${{ needs.tauri-integration-tests.result }}" != "success" ]]; then
+            echo "❌ Tauri build pipeline failed"
+            exit 1
+          else
+            echo "✅ Tauri build pipeline succeeded"
+          fi

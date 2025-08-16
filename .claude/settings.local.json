@@ -30,7 +30,9 @@
       "WebFetch(domain:docs.rs)",
       "WebFetch(domain:v2.tauri.app)",
       "Bash(cargo doc:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm uninstall:*)",
+      "Bash(npm ls:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

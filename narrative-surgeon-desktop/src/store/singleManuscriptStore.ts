@@ -1,12 +1,12 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
+import type { StateCreator } from 'zustand'
 import type {
   TechnoThrillerManuscript,
   ManuscriptVersion,
   Chapter,
   ConsistencyReport,
-  VersionComparison,
-  SerializableManuscript
+  VersionComparison
 } from '@/types/single-manuscript'
 import { manuscriptToSerializable, manuscriptFromSerializable } from '@/types/single-manuscript'
 import { ConsistencyEngine } from '@/lib/consistency-engine'
@@ -70,10 +70,12 @@ interface SingleManuscriptState {
   }
 }
 
-export const useSingleManuscriptStore = create<SingleManuscriptState>()(
-  devtools(
-    persist(
-      (set, get) => ({
+const storeConfig: StateCreator<
+  SingleManuscriptState,
+  [],
+  [],
+  SingleManuscriptState
+> = (set, get) => ({
         // Initial state
         manuscript: null,
         isLoading: false,
@@ -495,7 +497,12 @@ export const useSingleManuscriptStore = create<SingleManuscriptState>()(
             }
           }
         }
-      }),
+})
+
+export const useSingleManuscriptStore = create<SingleManuscriptState>()(
+  devtools(
+    persist(
+      storeConfig,
       {
         name: 'single-manuscript-store',
         partialize: (state) => ({

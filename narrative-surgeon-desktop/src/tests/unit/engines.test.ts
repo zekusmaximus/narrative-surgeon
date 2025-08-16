@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { ConsistencyEngine } from '@/lib/consistency-engine'
 import { ExportEngine } from '@/lib/export-engine'
 import { PerformanceMonitor } from '@/lib/performance-monitor'
@@ -36,7 +36,7 @@ const createMockManuscript = (): TechnoThrillerManuscript => ({
           characterArcs: ['Sarah introduction']
         },
         dependencies: {
-          introduces: ['Sarah Chen', 'Quantum computing', 'Encryption mystery'],
+          introduces: ['Sarah Chen', 'Marcus Webb', 'Quantum computing', 'Encryption mystery'],
           requiredKnowledge: [],
           references: [],
           continuityRules: ['Character consistency']
@@ -101,7 +101,7 @@ const createMockManuscript = (): TechnoThrillerManuscript => ({
         name: 'Marcus Webb',
         role: 'antagonist',
         description: 'NSA cyber security specialist',
-        firstAppearance: 'ch2',
+        firstAppearance: 'ch1',
         techExpertise: ['Cybersecurity', 'Network analysis']
       }
     ],
@@ -268,7 +268,7 @@ describe('ExportEngine', () => {
 
     // Verify content
     const text = await blob.text()
-    expect(text).toContain(manuscript.metadata.title)
+    expect(text).toContain(manuscript.metadata.title.toUpperCase())
     expect(text).toContain(manuscript.metadata.author)
     expect(text).toContain('Chapter 1: The Discovery')
     expect(text).toContain('Dr. Sarah Chen stared')

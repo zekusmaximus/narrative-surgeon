@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { invoke as tauriInvoke } from '@tauri-apps/api/tauri'
+import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 
 type Submission = {
   id: string

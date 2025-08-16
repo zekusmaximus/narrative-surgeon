@@ -3,7 +3,7 @@
  * Provides native desktop features and professional application lifecycle management
  */
 
-import { invoke } from '@tauri-apps/api/tauri'
+import { invoke } from '@tauri-apps/api/core'
 import { appWindow } from '@tauri-apps/api/window'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { sendNotification, requestPermission } from '@tauri-apps/plugin-notification'

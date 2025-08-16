@@ -45,7 +45,7 @@ interface EditorState {
   replaceTerm: string;
 }
 
-export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) {
+export function ManuscriptEditor({ manuscript: manuscriptProp, onBack }: ManuscriptEditorProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [currentScene, setCurrentScene] = useState<Scene | null>(null);
@@ -61,17 +61,14 @@ export function ManuscriptEditor({ manuscript, onBack }: ManuscriptEditorProps) 
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { 
-    scenes, 
-    loadManuscriptData, 
-    updateScene, 
-    setActiveManuscript,
-    reorderScenes,
-    createScene,
-    deleteScene,
-    renameScene
+    manuscript: storeManuscript, 
+    actions
   } = useSingleManuscriptStore();
 
-  const manuscriptScenes = scenes.get(manuscript.id) || [];
+  // Use store manuscript if available, otherwise fall back to prop
+  const manuscript = storeManuscript || manuscriptProp;
+
+  const manuscriptChapters = manuscript?.content?.chapters || [];
 
   // Auto-save function  
   const autoSave = useCallback(async (editorInstance: any) => {

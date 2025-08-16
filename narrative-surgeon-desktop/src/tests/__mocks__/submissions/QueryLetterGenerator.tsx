@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { invoke as tauriInvoke } from '@tauri-apps/api/tauri'
+import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 
 type Manuscript = {
   id?: string

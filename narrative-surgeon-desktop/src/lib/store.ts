@@ -238,6 +238,106 @@ export const useAppStore = create<AppState>()(
           editorSettings: { ...state.editorSettings, ...settings }
         }))
       },
+
+      // New manuscript actions implementation
+      loadDigitalShadowsManuscript: async () => {
+        set({ loading: true, error: null })
+        try {
+          const manuscript = await loadDigitalShadowsManuscript()
+          set({ 
+            currentManuscript: manuscript,
+            isManuscriptMode: true,
+            loading: false 
+          })
+        } catch (error) {
+          set({ 
+            error: error instanceof Error ? error.message : 'Failed to load Digital Shadows manuscript',
+            loading: false 
+          })
+        }
+      },
+
+      initializeManuscriptMode: async () => {
+        set({ loading: true, error: null })
+        try {
+          const manuscript = await loadManuscriptFromStorage()
+          set({ 
+            currentManuscript: manuscript,
+            isManuscriptMode: true,
+            loading: false 
+          })
+        } catch (error) {
+          set({ 
+            error: error instanceof Error ? error.message : 'Failed to initialize manuscript mode',
+            loading: false 
+          })
+        }
+      },
+
+      switchToLegacyMode: () => {
+        set({ 
+          currentManuscript: null,
+          isManuscriptMode: false,
+          activeChapterId: null
+        })
+      },
+
+      // Enhanced editor actions for chapters
+      setActiveChapter: (chapterId) => {
+        const { currentManuscript } = get()
+        if (currentManuscript && chapterId !== null) {
+          const chapter = currentManuscript.content.chapters.find(c => c.currentPosition === chapterId)
+          set({ 
+            activeChapterId: chapterId,
+            editorContent: chapter?.content || '',
+            unsavedChanges: false
+          })
+        } else {
+          set({ 
+            activeChapterId: null,
+            editorContent: '',
+            unsavedChanges: false
+          })
+        }
+      },
+
+      updateChapterContent: (chapterId, content) => {
+        const { currentManuscript } = get()
+        if (currentManuscript) {
+          const updatedManuscript = { ...currentManuscript }
+          const chapterIndex = updatedManuscript.content.chapters.findIndex(c => c.currentPosition === chapterId)
+          if (chapterIndex !== -1) {
+            updatedManuscript.content.chapters[chapterIndex] = {
+              ...updatedManuscript.content.chapters[chapterIndex],
+              content
+            }
+            set({ 
+              currentManuscript: updatedManuscript,
+              editorContent: content,
+              unsavedChanges: true
+            })
+          }
+        }
+      },
+
+      saveCurrentChapter: async () => {
+        const { activeChapterId, editorContent, currentManuscript } = get()
+        if (!activeChapterId || !currentManuscript) return
+
+        try {
+          // Update the chapter content in the manuscript
+          get().updateChapterContent(activeChapterId, editorContent)
+          
+          // Here you would typically save to backend
+          // await TauriAPI.updateManuscript(currentManuscript)
+          
+          set({ unsavedChanges: false })
+        } catch (error) {
+          set({ 
+            error: error instanceof Error ? error.message : 'Failed to save chapter'
+          })
+        }
+      },
     })) as any,
     { name: 'narrative-surgeon-store' }
   ) as any

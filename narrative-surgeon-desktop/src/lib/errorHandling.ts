@@ -3,7 +3,7 @@
  * Provides user-friendly error management, crash recovery, and automatic reporting
  */
 
-import { invoke } from '@tauri-apps/api/tauri'
+import { invoke } from '@tauri-apps/api/core'
 import { toast } from '@/components/ui/use-toast'
 
 export enum ErrorCategory {

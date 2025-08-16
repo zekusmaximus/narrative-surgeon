@@ -19,12 +19,38 @@ pub fn run() {
             SqlBuilder::default()
                 .add_migrations(
                     "sqlite:narrative_surgeon.db",
-                    vec![Migration {
-                        version: 1,
-                        description: "create_initial_tables",
-                        sql: include_str!("../migrations/001_initial.sql"),
-                        kind: MigrationKind::Up,
-                    }],
+                    vec![
+                        Migration {
+                            version: 1,
+                            description: "create_initial_tables",
+                            sql: include_str!("../migrations/001_initial.sql"),
+                            kind: MigrationKind::Up,
+                        },
+                        Migration {
+                            version: 2,
+                            description: "add_indexes",
+                            sql: include_str!("../migrations/002_indexes.sql"),
+                            kind: MigrationKind::Up,
+                        },
+                        Migration {
+                            version: 3,
+                            description: "add_fts5_search",
+                            sql: include_str!("../migrations/003_fts5_search.sql"),
+                            kind: MigrationKind::Up,
+                        },
+                        Migration {
+                            version: 4,
+                            description: "add_analytics",
+                            sql: include_str!("../migrations/004_analytics.sql"),
+                            kind: MigrationKind::Up,
+                        },
+                        Migration {
+                            version: 5,
+                            description: "add_module_status",
+                            sql: include_str!("../migrations/005_module_status.sql"),
+                            kind: MigrationKind::Up,
+                        },
+                    ],
                 )
                 .build(),
         )
@@ -43,6 +69,12 @@ pub fn run() {
             db::reorder_scenes,
             db::search_content,
             db::create_database_backup,
+            db::get_dirty_scenes,
+            db::get_module_status,
+            db::mark_modules_dirty,
+            db::update_module_status,
+            db::get_scene_content,
+            db::clear_all_dirty_flags,
             fs::import_manuscript_file,
             fs::export_manuscript_file,
             fs::open_file_dialog,
