@@ -34,7 +34,9 @@
       "Bash(npm uninstall:*)",
       "Bash(npm ls:*)",
       "Bash(cargo clean:*)",
-      "Bash(timeout 15 npm run tauri dev)"
+      "Bash(timeout 15 npm run tauri dev)",
+      "Bash(true)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
