@@ -4,7 +4,7 @@ pub mod window;
 pub mod menu;
 pub mod export;
 pub mod error;
-// pub mod commands;  // Temporarily disabled until database layer is complete
+pub mod commands;
 
 use tauri_plugin_sql::{Builder as SqlBuilder, Migration, MigrationKind};
 use tauri::Manager;
@@ -28,26 +28,8 @@ pub fn run() {
                         },
                         Migration {
                             version: 2,
-                            description: "add_indexes",
-                            sql: include_str!("../migrations/002_indexes.sql"),
-                            kind: MigrationKind::Up,
-                        },
-                        Migration {
-                            version: 3,
-                            description: "add_fts5_search",
-                            sql: include_str!("../migrations/003_fts5_search.sql"),
-                            kind: MigrationKind::Up,
-                        },
-                        Migration {
-                            version: 4,
-                            description: "add_analytics",
-                            sql: include_str!("../migrations/004_analytics.sql"),
-                            kind: MigrationKind::Up,
-                        },
-                        Migration {
-                            version: 5,
-                            description: "add_module_status",
-                            sql: include_str!("../migrations/005_module_status.sql"),
+                            description: "single_manuscript_mode",
+                            sql: include_str!("../migrations/002_single_manuscript.sql"),
                             kind: MigrationKind::Up,
                         },
                     ],
@@ -55,12 +37,18 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
-            db::get_all_manuscripts,
+            // Simplified single manuscript commands
+            commands::get_manuscript_safe,
+            commands::update_manuscript_safe,
+            commands::get_scenes_safe,
+            commands::update_scene_safe,
+            commands::create_scene_safe,
+            commands::delete_scene_safe,
+            commands::get_recent_errors,
+            // Legacy db commands for compatibility
             db::get_manuscript,
-            db::create_manuscript,
+            db::get_all_scenes,
             db::update_manuscript,
-            db::delete_manuscript,
-            db::get_manuscript_scenes,
             db::get_scene,
             db::create_scene,
             db::update_scene,
@@ -75,12 +63,13 @@ pub fn run() {
             db::update_module_status,
             db::get_scene_content,
             db::clear_all_dirty_flags,
-            fs::import_manuscript_file,
+            // File system operations
+            fs::replace_manuscript_content,
             fs::export_manuscript_file,
             fs::open_file_dialog,
             fs::save_file_dialog,
-            fs::batch_import_files,
             fs::backup_manuscript,
+            // Window management
             window::open_comparison_window,
             window::open_floating_notes,
             window::open_distraction_free_mode,
@@ -92,6 +81,7 @@ pub fn run() {
             window::set_window_size,
             window::get_window_info,
             window::list_windows,
+            // Export operations
             export::export_manuscript,
             export::get_export_formats,
             export::validate_export_options,

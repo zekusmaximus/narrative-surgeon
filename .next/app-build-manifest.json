@@ -1,3 +1,37 @@
 {
-  "pages": {}
+  "pages": {
+    "/_not-found/page": [
+      "static/chunks/webpack-84d82047844506d2.js",
+      "static/chunks/vendors-40cd98f9cb315d4a.js",
+      "static/chunks/main-app-35195133b5814a26.js",
+      "static/chunks/app/_not-found/page-f59e083cd5d7e45a.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack-84d82047844506d2.js",
+      "static/chunks/vendors-40cd98f9cb315d4a.js",
+      "static/chunks/main-app-35195133b5814a26.js",
+      "static/css/7b6845d7d299de11.css",
+      "static/chunks/app/layout-277510e3f2f4e180.js"
+    ],
+    "/editor/page": [
+      "static/chunks/webpack-84d82047844506d2.js",
+      "static/chunks/vendors-40cd98f9cb315d4a.js",
+      "static/chunks/main-app-35195133b5814a26.js",
+      "static/chunks/radix-ui-4ca3a931b64e9697.js",
+      "static/chunks/dnd-kit-f3710defb4f74348.js",
+      "static/chunks/app/editor/page-b0bcf09a0a996366.js"
+    ],
+    "/page": [
+      "static/chunks/webpack-84d82047844506d2.js",
+      "static/chunks/vendors-40cd98f9cb315d4a.js",
+      "static/chunks/main-app-35195133b5814a26.js",
+      "static/chunks/app/page-1919b7083ea648f8.js"
+    ],
+    "/settings/page": [
+      "static/chunks/webpack-84d82047844506d2.js",
+      "static/chunks/vendors-40cd98f9cb315d4a.js",
+      "static/chunks/main-app-35195133b5814a26.js",
+      "static/chunks/app/settings/page-593221f53080e1ed.js"
+    ]
+  }
 }

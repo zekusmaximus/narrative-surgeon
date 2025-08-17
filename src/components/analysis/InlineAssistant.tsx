@@ -24,7 +24,6 @@ interface InlineAssistantProps {
   editorContent: string
   cursorPosition: number
   selectedText?: string
-  manuscriptId: string
   isActive: boolean
   onSuggestionApply?: (suggestion: string) => void
   onTextReplace?: (start: number, end: number, replacement: string) => void
@@ -41,7 +40,6 @@ interface SuggestionGroup {
 export function InlineAssistant({
   editorContent,
   cursorPosition,
-  manuscriptId,
   isActive,
   onSuggestionApply,
   onTextReplace,
@@ -58,13 +56,13 @@ export function InlineAssistant({
   // Track writing session
   useEffect(() => {
     if (isActive) {
-      realTimeAnalyzer.startWritingSession(manuscriptId)
+      realTimeAnalyzer.startWritingSession('default')
     }
     
     return () => {
-      realTimeAnalyzer.endWritingSession(manuscriptId)
+      realTimeAnalyzer.endWritingSession('default')
     }
-  }, [isActive, manuscriptId])
+  }, [isActive])
 
   // Real-time analysis as user types
   useEffect(() => {
@@ -84,7 +82,7 @@ export function InlineAssistant({
       
       try {
         await realTimeAnalyzer.analyzeTextAsUserTypes(
-          manuscriptId,
+          'default',
           editorContent,
           cursorPosition,
           (newSuggestions) => {
@@ -94,7 +92,7 @@ export function InlineAssistant({
         )
 
         // Update writing insights
-        const insights = realTimeAnalyzer.getWritingInsights(manuscriptId)
+        const insights = realTimeAnalyzer.getWritingInsights('default')
         setWritingInsights(insights)
       } catch (error) {
         console.error('Real-time analysis failed:', error)
@@ -107,7 +105,7 @@ export function InlineAssistant({
         clearTimeout(debounceRef.current)
       }
     }
-  }, [editorContent, cursorPosition, isActive, manuscriptId])
+  }, [editorContent, cursorPosition, isActive])
 
   // Get text completions when user pauses
   useEffect(() => {

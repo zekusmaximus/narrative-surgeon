@@ -178,7 +178,6 @@ const AutoSave = Extension.create({
 export interface EditorProps {
   content: string
   onChange: (content: string) => void
-  manuscriptId: string
   sceneId?: string
   readOnly?: boolean
   showWordCount?: boolean

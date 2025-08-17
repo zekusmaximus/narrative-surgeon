@@ -5,7 +5,6 @@ import { analysisCache, chunkCache } from '../cache'
 import type { AnalysisResult } from '../llmProvider'
 
 export interface ManuscriptAnalysisReport {
-  manuscriptId: string
   totalWords: number
   analysisDate: number
   processingTime: number

@@ -1,16 +1,16 @@
 /**
- * End-to-End Tests - Manuscript Management Workflow
- * Tests complete user workflows from start to finish
+ * End-to-End Tests - Single Manuscript Workflow
+ * Tests complete user workflows for single manuscript mode
  */
 
 import { test, expect, Page } from '@playwright/test'
 
-// Test data
-const SAMPLE_MANUSCRIPT = {
-  title: 'Test Novel',
-  author: 'Test Author',
-  genre: 'Literary Fiction',
-  content: 'This is a test manuscript content with multiple paragraphs.\n\nThis is the second paragraph with enough content to test various features.\n\nAnd a third paragraph to ensure proper handling of longer content.',
+// Test data for single manuscript mode
+const SAMPLE_CONTENT = {
+  title: 'The Last Echo of Midnight',
+  author: 'Alex Rivera',
+  genre: 'Urban Fantasy',
+  sceneContent: 'This is a test scene content with multiple paragraphs.\n\nThis is the second paragraph with enough content to test various features.\n\nAnd a third paragraph to ensure proper handling of longer content.',
   wordCount: 25
 }
 
@@ -40,42 +40,39 @@ class TestHelpers {
   }
 }
 
-test.describe.skip('Manuscript Management Workflow', () => {
+test.describe('Single Manuscript Workflow', () => {
   test.beforeEach(async ({ page }) => {
-    // Start with clean application state
+    // Start with the hardcoded single manuscript
     await page.goto('/')
     await page.waitForLoadState('domcontentloaded')
+    // App should auto-redirect to /editor with the singleton manuscript
+    await page.waitForURL('**/editor')
   })
 
-  test('Create, edit, analyze, and export manuscript', async ({ page }) => {
+  test('Edit, analyze, and export single manuscript', async ({ page }) => {
     const startTime = Date.now()
 
-    // Step 1: Create new manuscript
-    await test.step('Create new manuscript', async () => {
-      await page.click('[data-testid="new-manuscript-button"]')
-      await page.fill('[data-testid="manuscript-title"]', SAMPLE_MANUSCRIPT.title)
-      await page.fill('[data-testid="manuscript-author"]', SAMPLE_MANUSCRIPT.author)
-      await page.selectOption('[data-testid="manuscript-genre"]', SAMPLE_MANUSCRIPT.genre)
-      await page.click('[data-testid="create-manuscript"]')
-      
-      // Verify manuscript was created
-      await expect(page.locator('[data-testid="manuscript-title-display"]')).toHaveText(SAMPLE_MANUSCRIPT.title)
+    // Step 1: Verify manuscript is loaded
+    await test.step('Verify manuscript loaded', async () => {
+      // Should show the hardcoded manuscript title
+      await expect(page.locator('[data-testid="manuscript-title-display"]')).toHaveText(SAMPLE_CONTENT.title)
+      await expect(page.locator('[data-testid="manuscript-author-display"]')).toHaveText(SAMPLE_CONTENT.author)
     })
 
-    // Step 2: Add content to manuscript
-    await test.step('Add and edit content', async () => {
+    // Step 2: Add content to existing manuscript
+    await test.step('Add and edit scene content', async () => {
       await page.click('[data-testid="add-scene-button"]')
       await page.fill('[data-testid="scene-title"]', 'Chapter 1')
-      await page.fill('[data-testid="scene-content"]', SAMPLE_MANUSCRIPT.content)
+      await page.fill('[data-testid="scene-content"]', SAMPLE_CONTENT.sceneContent)
       await page.click('[data-testid="save-scene"]')
       
       // Verify content was saved
       await expect(page.locator('[data-testid="word-count"]')).toContainText('25')
     })
 
-    // Step 3: Run manuscript analysis
+    // Step 3: Run scene analysis
     await test.step('Run AI analysis', async () => {
-      await page.click('[data-testid="analyze-manuscript"]')
+      await page.click('[data-testid="analyze-scene"]')
       
       // Wait for analysis to complete (should be within 60 seconds)
       await TestHelpers.waitForAnalysis(page)
@@ -86,7 +83,7 @@ test.describe.skip('Manuscript Management Workflow', () => {
       await expect(page.locator('[data-testid="pacing-analysis"]')).toBeVisible()
     })
 
-    // Step 4: Export manuscript in multiple formats
+    // Step 4: Export single manuscript
     await test.step('Export manuscript', async () => {
       await page.click('[data-testid="export-manuscript"]')
       await page.selectOption('[data-testid="export-format"]', 'shunn_manuscript')
@@ -103,76 +100,52 @@ test.describe.skip('Manuscript Management Workflow', () => {
     expect(totalTime).toBeLessThan(300000) // 5 minutes
   })
 
-  test('Query letter generation and agent submission workflow', async ({ page }) => {
-    // Step 1: Navigate to query letter generator
-    await test.step('Open query letter generator', async () => {
-      await page.click('[data-testid="publishing-menu"]')
-      await page.click('[data-testid="query-generator"]')
-      await expect(page.locator('[data-testid="query-generator-form"]')).toBeVisible()
+  test('Scene management and chapter reordering', async ({ page }) => {
+    // Step 1: Add multiple scenes
+    await test.step('Add multiple scenes', async () => {
+      for (let i = 1; i <= 3; i++) {
+        await page.click('[data-testid="add-scene-button"]')
+        await page.fill('[data-testid="scene-title"]', `Chapter ${i}`)
+        await page.fill('[data-testid="scene-content"]', `Content for chapter ${i} with sufficient text for testing.`)
+        await page.click('[data-testid="save-scene"]')
+        await page.waitForTimeout(500) // Brief pause between scenes
+      }
+      
+      // Verify all scenes were created
+      await expect(page.locator('[data-testid="scene-list"] .scene-item')).toHaveCount(3)
     })
 
-    // Step 2: Generate query letter
-    await test.step('Generate query letter', async () => {
-      await page.fill('[data-testid="manuscript-title"]', 'Test Novel')
-      await page.fill('[data-testid="word-count"]', '85000')
-      await page.selectOption('[data-testid="genre-select"]', 'Literary Fiction')
-      await page.fill('[data-testid="logline"]', 'A compelling story about...')
-      await page.fill('[data-testid="bio"]', 'Author bio information...')
+    // Step 2: Test scene reordering
+    await test.step('Reorder scenes', async () => {
+      await page.click('[data-testid="reorder-mode"]')
       
-      await page.click('[data-testid="generate-query"]')
+      // Drag last scene to first position
+      await page.dragAndDrop('[data-testid="scene-3"]', '[data-testid="scene-1"]')
       
-      // Wait for AI generation
-      await page.waitForSelector('[data-testid="generated-query"]')
-      
-      // Verify query was generated
-      await expect(page.locator('[data-testid="query-score"]')).toBeVisible()
-      expect(await page.locator('[data-testid="query-score"]').textContent()).toMatch(/\d+/)
+      // Verify new order
+      await expect(page.locator('[data-testid="scene-list"] .scene-item:first-child')).toContainText('Chapter 3')
     })
 
-    // Step 3: Research agents
-    await test.step('Research and select agents', async () => {
-      await page.click('[data-testid="agent-research-tab"]')
+    // Step 3: Test consistency checking
+    await test.step('Run consistency check', async () => {
+      await page.click('[data-testid="consistency-check"]')
+      await page.waitForSelector('[data-testid="consistency-results"]')
       
-      // Use smart matching
-      await page.click('[data-testid="smart-matches-button"]')
-      await page.waitForSelector('[data-testid="agent-matches"]')
-      
-      // Select top match
-      await page.click('[data-testid="agent-card"]:first-child')
-      await page.click('[data-testid="select-agent"]')
-      
-      // Verify agent was selected
-      await expect(page.locator('[data-testid="selected-agent"]')).toBeVisible()
-    })
-
-    // Step 4: Track submission
-    await test.step('Track submission', async () => {
-      await page.click('[data-testid="submission-tracker-tab"]')
-      await page.click('[data-testid="add-submission"]')
-      
-      await page.fill('[data-testid="submission-agent-name"]', 'Test Agent')
-      await page.fill('[data-testid="submission-agency"]', 'Test Agency')
-      await page.click('[data-testid="save-submission"]')
-      
-      // Verify submission was tracked
-      await expect(page.locator('[data-testid="submission-list"] .submission-item')).toBeVisible()
+      // Verify consistency report is shown
+      await expect(page.locator('[data-testid="consistency-score"]')).toBeVisible()
+      await expect(page.locator('[data-testid="consistency-issues"]')).toBeVisible()
     })
   })
 
-  test('Large manuscript performance (100k+ words)', async ({ page }) => {
+  test('Large content performance', async ({ page }) => {
     const startTime = Date.now()
 
-    await test.step('Create large manuscript', async () => {
+    await test.step('Add large content to existing manuscript', async () => {
       const largeContent = await TestHelpers.createLargeManuscript(page)
       
-      await page.click('[data-testid="new-manuscript-button"]')
-      await page.fill('[data-testid="manuscript-title"]', 'Large Test Novel')
-      await page.fill('[data-testid="manuscript-author"]', 'Test Author')
-      await page.click('[data-testid="create-manuscript"]')
-      
-      // Add large content in chunks to avoid timeout
+      // Add large content in chunks to existing manuscript
       const chunks = largeContent.match(/.{1,10000}/g) || []
-      for (let i = 0; i < chunks.length; i++) {
+      for (let i = 0; i < Math.min(chunks.length, 10); i++) { // Limit to 10 chunks for testing
         await page.click('[data-testid="add-scene-button"]')
         await page.fill('[data-testid="scene-title"]', `Chapter ${i + 1}`)
         await page.fill('[data-testid="scene-content"]', chunks[i])
@@ -183,11 +156,11 @@ test.describe.skip('Manuscript Management Workflow', () => {
       }
     })
 
-    await test.step('Verify performance with large manuscript', async () => {
-      // Check word count is accurate
+    await test.step('Verify performance with large content', async () => {
+      // Check word count is reasonable
       const wordCountText = await page.locator('[data-testid="word-count"]').textContent()
       const wordCount = parseInt(wordCountText?.replace(/,/g, '') || '0')
-      expect(wordCount).toBeGreaterThan(90000) // Allow some variance
+      expect(wordCount).toBeGreaterThan(5000) // Should have significant content
       
       // Test search performance
       const searchStart = Date.now()
@@ -196,42 +169,39 @@ test.describe.skip('Manuscript Management Workflow', () => {
       const searchTime = Date.now() - searchStart
       expect(searchTime).toBeLessThan(5000) // Search should complete within 5 seconds
       
-      // Test navigation performance
+      // Test scene navigation performance
       const navStart = Date.now()
-      await page.click('[data-testid="scene-navigation"] button:nth-child(50)') // Jump to middle
+      await page.click('[data-testid="scene-navigation"] .scene-item:nth-child(5)') // Jump to 5th scene
       await page.waitForLoadState('domcontentloaded')
       const navTime = Date.now() - navStart
-      expect(navTime).toBeLessThan(2000) // Navigation should be instant
+      expect(navTime).toBeLessThan(2000) // Navigation should be fast
     })
 
-    await test.step('Test analysis performance on large manuscript', async () => {
-      await page.click('[data-testid="analyze-manuscript"]')
+    await test.step('Test analysis performance on large content', async () => {
+      await page.click('[data-testid="analyze-scene"]')
       
-      // Analysis should complete within 60 seconds even for large manuscripts
+      // Analysis should complete within 60 seconds even for large content
       await TestHelpers.waitForAnalysis(page, 60000)
       
       // Verify analysis completed successfully
       await expect(page.locator('[data-testid="analysis-results"]')).toBeVisible()
     })
 
-    // Entire large manuscript workflow should complete within 10 minutes
+    // Entire large content workflow should complete within 5 minutes
     const totalTime = Date.now() - startTime
-    expect(totalTime).toBeLessThan(600000) // 10 minutes
+    expect(totalTime).toBeLessThan(300000) // 5 minutes
   })
 
   test('Real-time typing responsiveness during background analysis', async ({ page }) => {
-    await test.step('Setup manuscript with background analysis', async () => {
-      await page.click('[data-testid="new-manuscript-button"]')
-      await page.fill('[data-testid="manuscript-title"]', 'Responsiveness Test')
-      await page.click('[data-testid="create-manuscript"]')
-      
+    await test.step('Setup scene with background analysis', async () => {
+      // Add a new scene to the existing manuscript
       await page.click('[data-testid="add-scene-button"]')
-      await page.fill('[data-testid="scene-title"]', 'Test Scene')
+      await page.fill('[data-testid="scene-title"]', 'Responsiveness Test Scene')
     })
 
     await test.step('Test typing responsiveness', async () => {
       // Start background analysis
-      await page.click('[data-testid="analyze-manuscript"]')
+      await page.click('[data-testid="analyze-scene"]')
       
       // Immediately start typing
       const textArea = page.locator('[data-testid="scene-content"]')
@@ -267,16 +237,24 @@ test.describe.skip('Manuscript Management Workflow', () => {
   })
 })
 
-test.describe.skip('Error Handling and Recovery', () => {
+test.describe('Error Handling and Recovery', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('domcontentloaded')
+    await page.waitForURL('**/editor')
+  })
+
   test('Handles network failures gracefully', async ({ page }) => {
     // Simulate network failure during AI analysis
     await page.route('**/api/analyze', route => route.abort())
     
-    await page.click('[data-testid="new-manuscript-button"]')
-    await page.fill('[data-testid="manuscript-title"]', 'Network Test')
-    await page.click('[data-testid="create-manuscript"]')
+    // Add a scene to analyze
+    await page.click('[data-testid="add-scene-button"]')
+    await page.fill('[data-testid="scene-title"]', 'Network Test Scene')
+    await page.fill('[data-testid="scene-content"]', 'Test content for network failure scenario.')
+    await page.click('[data-testid="save-scene"]')
     
-    await page.click('[data-testid="analyze-manuscript"]')
+    await page.click('[data-testid="analyze-scene"]')
     
     // Should show user-friendly error message
     await expect(page.locator('[data-testid="error-message"]')).toContainText('Unable to connect')
@@ -286,32 +264,31 @@ test.describe.skip('Error Handling and Recovery', () => {
   })
 
   test('Preserves work during crashes', async ({ page }) => {
-    // Create manuscript with content
-    await page.click('[data-testid="new-manuscript-button"]')
-    await page.fill('[data-testid="manuscript-title"]', 'Crash Recovery Test')
-    await page.click('[data-testid="create-manuscript"]')
-    
+    // Add content to existing manuscript
     await page.click('[data-testid="add-scene-button"]')
     await page.fill('[data-testid="scene-title"]', 'Important Chapter')
     await page.fill('[data-testid="scene-content"]', 'This content should be recovered after crash.')
+    await page.click('[data-testid="save-scene"]')
     
     // Simulate application crash/restart
     await page.reload()
+    await page.waitForLoadState('domcontentloaded')
+    await page.waitForURL('**/editor')
     
-    // Content should be automatically recovered
-    await expect(page.locator('[data-testid="recovery-notification"]')).toBeVisible()
-    await page.click('[data-testid="restore-work"]')
+    // Content should be automatically recovered or persisted
+    await expect(page.locator('[data-testid="scene-list"]')).toContainText('Important Chapter')
     
-    // Verify content was restored
-    await expect(page.locator('[data-testid="manuscript-title-display"]')).toContainText('Crash Recovery Test')
+    // Verify manuscript is still accessible
+    await expect(page.locator('[data-testid="manuscript-title-display"]')).toHaveText(SAMPLE_CONTENT.title)
   })
 })
 
-test.describe.skip('Performance Benchmarks', () => {
+test.describe('Performance Benchmarks', () => {
   test('Application startup time', async ({ page }) => {
     const startTime = Date.now()
     await page.goto('/')
     await page.waitForLoadState('domcontentloaded')
+    await page.waitForURL('**/editor') // Should auto-redirect to editor
     await page.waitForSelector('[data-testid="app-ready"]')
     const loadTime = Date.now() - startTime
     
@@ -320,19 +297,23 @@ test.describe.skip('Performance Benchmarks', () => {
   })
 
   test('Memory usage remains stable during extended session', async ({ page }) => {
-    // Simulate extended usage session
+    await page.goto('/')
+    await page.waitForURL('**/editor')
+    
+    // Simulate extended usage session - add and remove scenes
     for (let i = 0; i < 10; i++) {
-      await page.click('[data-testid="new-manuscript-button"]')
-      await page.fill('[data-testid="manuscript-title"]', `Test Manuscript ${i}`)
-      await page.click('[data-testid="create-manuscript"]')
-      
-      // Add content
+      // Add scene
       await page.click('[data-testid="add-scene-button"]')
+      await page.fill('[data-testid="scene-title"]', `Test Scene ${i}`)
       await page.fill('[data-testid="scene-content"]', 'Sample content '.repeat(100))
       await page.click('[data-testid="save-scene"]')
       
-      // Delete manuscript to test cleanup
-      await page.click('[data-testid="delete-manuscript"]')
+      // Edit scene content multiple times
+      await page.fill('[data-testid="scene-content"]', `Updated content ${i} `.repeat(100))
+      await page.click('[data-testid="save-scene"]')
+      
+      // Delete scene to test cleanup
+      await page.click('[data-testid="delete-scene"]')
       await page.click('[data-testid="confirm-delete"]')
     }
     

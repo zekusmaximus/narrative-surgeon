@@ -23,20 +23,20 @@ const createMockManuscript = (): TechnoThrillerManuscript => ({
       {
         id: 'ch1',
         title: 'The Discovery',
-        content: 'Dr. Sarah Chen stared at the quantum computing array. The encryption key appeared on screen.',
+        content: 'The protagonist stared at the computer screen. Data appeared on the display.',
         wordCount: 1500,
         currentPosition: 1,
         metadata: {
-          pov: 'Sarah Chen',
-          location: ['MIT Lab'],
+          pov: 'Protagonist',
+          location: ['Lab'],
           timeframe: 'Day 1, Morning',
           tensionLevel: 3,
-          majorEvents: ['Discovers encrypted data'],
-          techElements: ['Quantum computing'],
-          characterArcs: ['Sarah introduction']
+          majorEvents: ['Discovers important data'],
+          techElements: ['Computing'],
+          characterArcs: ['Protagonist introduction']
         },
         dependencies: {
-          introduces: ['Sarah Chen', 'Marcus Webb', 'Quantum computing', 'Encryption mystery'],
+          introduces: ['Protagonist', 'Antagonist', 'Technology', 'Main conflict'],
           requiredKnowledge: [],
           references: [],
           continuityRules: ['Character consistency']
@@ -45,21 +45,21 @@ const createMockManuscript = (): TechnoThrillerManuscript => ({
       {
         id: 'ch2',
         title: 'The Pursuit',
-        content: 'Marcus Webb received the alert. Someone had accessed the quantum system. Sarah Chen was now a target.',
+        content: 'The antagonist received the alert. Someone had accessed the system. The protagonist was now a target.',
         wordCount: 1800,
         currentPosition: 2,
         metadata: {
-          pov: 'Marcus Webb',
-          location: ['NSA Headquarters'],
+          pov: 'Antagonist',
+          location: ['Government Building'],
           timeframe: 'Day 1, Afternoon',
           tensionLevel: 7,
-          majorEvents: ['Marcus learns of breach', 'Sarah becomes target'],
-          techElements: ['NSA systems'],
-          characterArcs: ['Marcus introduction']
+          majorEvents: ['Antagonist learns of breach', 'Protagonist becomes target'],
+          techElements: ['Government systems'],
+          characterArcs: ['Antagonist introduction']
         },
         dependencies: {
-          introduces: ['Marcus Webb', 'NSA involvement'],
-          requiredKnowledge: ['Sarah Chen', 'Quantum computing'],
+          introduces: ['Antagonist', 'Government involvement'],
+          requiredKnowledge: ['Protagonist', 'Technology'],
           references: [{ targetChapterId: 'ch1', referenceType: 'plot', description: 'References the discovery', strength: 'strong' }],
           continuityRules: ['Character consistency']
         }
@@ -67,21 +67,21 @@ const createMockManuscript = (): TechnoThrillerManuscript => ({
       {
         id: 'ch3',
         title: 'The Network',
-        content: 'Sarah discovered the neural network patterns hidden in the blockchain. The AI had been learning.',
+        content: 'The protagonist discovered the network patterns hidden in the system. The AI had been learning.',
         wordCount: 2100,
         currentPosition: 3,
         metadata: {
-          pov: 'Sarah Chen',
+          pov: 'Protagonist',
           location: ['MIT Lab', 'Hidden Server Room'],
           timeframe: 'Day 1, Evening',
           tensionLevel: 8,
           majorEvents: ['AI discovery', 'Network infiltration'],
           techElements: ['AI', 'Blockchain'],
-          characterArcs: ['Sarah development']
+          characterArcs: ['Protagonist development']
         },
         dependencies: {
           introduces: ['AI consciousness', 'Blockchain network'],
-          requiredKnowledge: ['Sarah Chen', 'Quantum computing', 'Encryption mystery'],
+          requiredKnowledge: ['Protagonist', 'Technology', 'Main conflict'],
           references: [{ targetChapterId: 'ch1', referenceType: 'tech', description: 'Builds on initial discovery', strength: 'medium' }],
           continuityRules: ['Tech consistency']
         }
@@ -90,35 +90,35 @@ const createMockManuscript = (): TechnoThrillerManuscript => ({
     characters: [
       {
         id: 'sarah',
-        name: 'Sarah Chen',
+        name: 'Protagonist',
         role: 'protagonist',
-        description: 'Quantum computing researcher at MIT',
+        description: 'Technology researcher',
         firstAppearance: 'ch1',
-        techExpertise: ['Quantum computing', 'Cryptography']
+        techExpertise: ['Computing', 'Security']
       },
       {
         id: 'marcus',
-        name: 'Marcus Webb',
+        name: 'Antagonist',
         role: 'antagonist',
-        description: 'NSA cyber security specialist',
+        description: 'Government security specialist',
         firstAppearance: 'ch1',
-        techExpertise: ['Cybersecurity', 'Network analysis']
+        techExpertise: ['Security', 'Analysis']
       }
     ],
     locations: [
       {
         id: 'mit-lab',
-        name: 'MIT Lab',
+        name: 'Research Lab',
         type: 'building',
-        description: 'Quantum computing research laboratory',
+        description: 'Technology research laboratory',
         firstMention: 'ch1',
         significance: 'major'
       },
       {
         id: 'nsa-hq',
-        name: 'NSA Headquarters',
+        name: 'Government Headquarters',
         type: 'building',
-        description: 'National Security Agency headquarters',
+        description: 'Government security headquarters',
         firstMention: 'ch2',
         significance: 'major'
       }
@@ -271,7 +271,7 @@ describe('ExportEngine', () => {
     expect(text).toContain(manuscript.metadata.title.toUpperCase())
     expect(text).toContain(manuscript.metadata.author)
     expect(text).toContain('Chapter 1: The Discovery')
-    expect(text).toContain('Dr. Sarah Chen stared')
+    expect(text).toContain('The protagonist stared')
   })
 
   it('should export as markdown format', async () => {

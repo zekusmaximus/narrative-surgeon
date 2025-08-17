@@ -2,8 +2,7 @@ import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import { TauriAPI } from './tauri'
 import type { Manuscript, Scene, ManuscriptSummary } from '../types'
-import { useManuscriptStore } from '../store/manuscript-store'
-import { loadDigitalShadowsManuscript, loadManuscriptFromStorage } from '../manuscript/loader'
+import { loadManuscriptFromStorage } from '../manuscript/loader'
 import type { TechnoThrillerManuscript } from '../manuscript/manuscript-data'
 
 interface AppState {
@@ -13,14 +12,9 @@ interface AppState {
   loading: boolean
   error: string | null
 
-  // Legacy support - will be deprecated
-  manuscripts: ManuscriptSummary[]
-  activeManuscript: Manuscript | null
-  scenes: Scene[]
-
-  // New single-manuscript state
+  // Single-manuscript state
   currentManuscript: TechnoThrillerManuscript | null
-  isManuscriptMode: boolean // true when using new manuscript system
+  scenes: Scene[]
 
   // Editor State (enhanced for new system)
   activeSceneId: string | null
@@ -44,24 +38,17 @@ interface AppState {
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
 
-  // New manuscript actions
-  loadDigitalShadowsManuscript: () => Promise<void>
+  // Manuscript actions
+  loadManuscript: () => Promise<void>
   initializeManuscriptMode: () => Promise<void>
-  switchToLegacyMode: () => void
   
   // Enhanced editor actions for chapters
   setActiveChapter: (chapterId: number | null) => void
   updateChapterContent: (chapterId: number, content: string) => void
   saveCurrentChapter: () => Promise<void>
 
-  // Legacy manuscript actions (for backward compatibility)
-  loadManuscripts: () => Promise<void>
-  createManuscript: (title: string, content: string) => Promise<void>
-  deleteManuscript: (id: string) => Promise<void>
-  setActiveManuscript: (manuscript: Manuscript | null) => void
-
-  // Legacy scene actions (for backward compatibility)
-  loadScenes: (manuscriptId: string) => Promise<void>
+  // Scene actions
+  loadScenes: () => Promise<void>
   updateScene: (sceneId: string, updates: Partial<Scene>) => Promise<void>
   setActiveScene: (sceneId: string | null) => void
 
@@ -80,14 +67,9 @@ export const useAppStore = create<AppState>()(
       loading: false,
       error: null,
 
-      // Legacy state
-      manuscripts: [],
-      activeManuscript: null,
-      scenes: [],
-
-      // New manuscript state
+      // Manuscript state
       currentManuscript: null,
-      isManuscriptMode: false,
+      scenes: [],
 
       activeSceneId: null,
       activeChapterId: null,
@@ -111,68 +93,12 @@ export const useAppStore = create<AppState>()(
       setError: (error) => set({ error }),
 
       // Manuscript Actions
-      loadManuscripts: async () => {
-        set({ loading: true, error: null })
-        try {
-          const manuscripts = await TauriAPI.loadManuscripts()
-          set({ manuscripts, loading: false })
-        } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Failed to load manuscripts',
-            loading: false 
-          })
-        }
-      },
-
-      createManuscript: async (title, content) => {
-        set({ loading: true, error: null })
-        try {
-          await TauriAPI.createManuscript(title, content)
-          // Reload manuscripts list
-          await get().loadManuscripts()
-        } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Failed to create manuscript',
-            loading: false 
-          })
-        }
-      },
-
-      deleteManuscript: async (id) => {
-        set({ loading: true, error: null })
-        try {
-          await TauriAPI.deleteManuscript(id)
-          // Remove from local state and reload list
-          set(state => ({
-            manuscripts: state.manuscripts.filter(m => m.id !== id),
-            activeManuscript: state.activeManuscript?.id === id ? null : state.activeManuscript,
-            loading: false
-          }))
-        } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Failed to delete manuscript',
-            loading: false 
-          })
-        }
-      },
-
-      setActiveManuscript: (manuscript) => {
-        set({ 
-          activeManuscript: manuscript,
-          activeSceneId: null,
-          scenes: [],
-          editorContent: ''
-        })
-        if (manuscript) {
-          get().loadScenes(manuscript.id)
-        }
-      },
 
       // Scene Actions
-      loadScenes: async (manuscriptId) => {
+      loadScenes: async () => {
         set({ loading: true, error: null })
         try {
-          const scenes = await TauriAPI.getScenes(manuscriptId)
+          const scenes = await TauriAPI.getScenes()
           set({ scenes, loading: false })
           
           // Set first scene as active if none selected
@@ -240,10 +166,10 @@ export const useAppStore = create<AppState>()(
       },
 
       // New manuscript actions implementation
-      loadDigitalShadowsManuscript: async () => {
+      loadManuscript: async () => {
         set({ loading: true, error: null })
         try {
-          const manuscript = await loadDigitalShadowsManuscript()
+          const manuscript = await loadManuscriptFromStorage()
           set({ 
             currentManuscript: manuscript,
             isManuscriptMode: true,
@@ -251,7 +177,7 @@ export const useAppStore = create<AppState>()(
           })
         } catch (error) {
           set({ 
-            error: error instanceof Error ? error.message : 'Failed to load Digital Shadows manuscript',
+            error: error instanceof Error ? error.message : 'Failed to load manuscript',
             loading: false 
           })
         }

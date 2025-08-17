@@ -1,3 +1,4 @@
+// Single manuscript types - aligned with database schema
 export interface Manuscript {
   id: string;
   title: string;
@@ -14,7 +15,6 @@ export interface Manuscript {
 
 export interface Scene {
   id: string;
-  manuscriptId: string;
   chapterNumber?: number;
   sceneNumberInChapter?: number;
   indexInManuscript: number;
@@ -37,7 +37,6 @@ export interface Scene {
 
 export interface Character {
   id: string;
-  manuscriptId: string;
   name: string;
   role?: string;
   firstAppearanceSceneId?: string;
@@ -71,7 +70,6 @@ export interface SceneAnalysis {
 
 export interface OpeningAnalysis {
   id: string;
-  manuscriptId: string;
   hookType?: string;
   hookStrength?: number;
   voiceEstablished?: boolean;
@@ -95,21 +93,19 @@ export interface ManuscriptSummary {
 }
 
 export interface AnalysisResult {
-  manuscriptId: string;
   summary: string;
   scores?: Record<string, number>;
   recommendations?: string[];
 }
 
 export interface QueryLetter {
-  manuscriptId: string;
   content: string;
   score?: number;
   suggestions?: string[];
 }
 
 export interface ImportResult {
-  manuscripts: Manuscript[];
+  manuscript: Manuscript;
   scenes: Scene[];
   errors?: string[];
 }

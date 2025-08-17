@@ -12,24 +12,16 @@ use chrono::Utc;
 use crate::error::{AppError, AppResult};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct FileImportResult {
+pub struct ContentReplacement {
     pub filename: String,
     pub content: String,
     pub word_count: u32,
     pub format: String,
-    pub chapters: Vec<ChapterInfo>,
-    pub metadata: FileMetadata,
     pub scenes: Vec<SceneInfo>,
+    pub metadata: FileMetadata,
     pub import_warnings: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ChapterInfo {
-    pub title: String,
-    pub content: String,
-    pub word_count: u32,
-    pub scene_count: u32,
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SceneInfo {
@@ -124,9 +116,9 @@ fn get_file_metadata(path: &Path) -> AppResult<(u64, String)> {
     Ok((file_size, modified_str))
 }
 
-// Enhanced file import with comprehensive error handling
+// Replace content in single manuscript from file
 #[tauri::command]
-pub async fn import_manuscript_file(_app: AppHandle, file_path: String) -> Result<FileImportResult, String> {
+pub async fn replace_manuscript_content(_app: AppHandle, file_path: String) -> Result<ContentReplacement, String> {
     let path = validate_file_path(&file_path).map_err(|e| e.to_string())?;
     
     let (file_size, modified_time) = get_file_metadata(&path).map_err(|e| e.to_string())?;
@@ -162,17 +154,15 @@ pub async fn import_manuscript_file(_app: AppHandle, file_path: String) -> Resul
     metadata.modified = Some(modified_time);
     metadata.line_count = content.lines().count() as u32;
 
-    // Process content for chapters and scenes
-    let chapters = detect_chapters_enhanced(&content);
-    let scenes = detect_scenes_enhanced(&content, &chapters);
+    // Process content for scenes (no chapters needed for single manuscript)
+    let scenes = detect_scenes_from_content(&content);
     let word_count = count_words_accurate(&content);
 
-    Ok(FileImportResult {
+    Ok(ContentReplacement {
         filename,
         content,
         word_count,
         format: extension,
-        chapters,
         scenes,
         metadata,
         import_warnings: warnings,
@@ -750,77 +740,10 @@ fn clean_html_content(html: &str) -> String {
     re_extra_whitespace.replace_all(&cleaned, " ").trim().to_string()
 }
 
-// Enhanced chapter detection
-fn detect_chapters_enhanced(content: &str) -> Vec<ChapterInfo> {
-    let mut chapters = Vec::new();
-    
-    // Look for chapter markers in HTML content
-    let chapter_regex = Regex::new(
-        r"(?i)(?m)<h[1-3][^>]*>([^<]*(?:chapter|part|book)\s*\d+[^<]*)</h[1-3]>"
-    ).unwrap();
-    
-    let mut last_end = 0;
-    let mut chapter_number = 1;
-    
-    for cap in chapter_regex.find_iter(content) {
-        if last_end > 0 {
-            let chapter_content = &content[last_end..cap.start()];
-            if !chapter_content.trim().is_empty() {
-                let scenes = detect_scenes_in_content(chapter_content);
-                chapters.push(ChapterInfo {
-                    title: format!("Chapter {}", chapter_number - 1),
-                    content: chapter_content.trim().to_string(),
-                    word_count: count_words_accurate(chapter_content),
-                    scene_count: scenes.len() as u32,
-                });
-            }
-        }
-        
-        last_end = cap.start();
-        chapter_number += 1;
-    }
-    
-    // Add the last chapter
-    if last_end < content.len() {
-        let chapter_content = &content[last_end..];
-        if !chapter_content.trim().is_empty() {
-            let scenes = detect_scenes_in_content(chapter_content);
-            chapters.push(ChapterInfo {
-                title: format!("Chapter {}", chapter_number - 1),
-                content: chapter_content.trim().to_string(),
-                word_count: count_words_accurate(chapter_content),
-                scene_count: scenes.len() as u32,
-            });
-        }
-    }
-    
-    // If no chapters detected, treat as single chapter
-    if chapters.is_empty() && !content.trim().is_empty() {
-        let scenes = detect_scenes_in_content(content);
-        chapters.push(ChapterInfo {
-            title: "Full Text".to_string(),
-            content: content.to_string(),
-            word_count: count_words_accurate(content),
-            scene_count: scenes.len() as u32,
-        });
-    }
-    
-    chapters
-}
 
-fn detect_scenes_enhanced(_content: &str, chapters: &[ChapterInfo]) -> Vec<SceneInfo> {
-    let mut all_scenes = Vec::new();
-    
-    for (chapter_idx, chapter) in chapters.iter().enumerate() {
-        let chapter_scenes = detect_scenes_in_content(&chapter.content);
-        for scene in chapter_scenes {
-            let mut scene_with_chapter = scene;
-            scene_with_chapter.chapter_number = Some((chapter_idx + 1) as u32);
-            all_scenes.push(scene_with_chapter);
-        }
-    }
-    
-    all_scenes
+// Detect scenes directly from content for single manuscript
+fn detect_scenes_from_content(content: &str) -> Vec<SceneInfo> {
+    detect_scenes_in_content(content)
 }
 
 fn detect_scenes_in_content(content: &str) -> Vec<SceneInfo> {
@@ -1204,7 +1127,7 @@ pub async fn open_file_dialog(app: AppHandle) -> Result<Option<String>, String> 
         .add_filter("Rich Text", &["rtf"])
         .add_filter("Markdown", &["md", "markdown"])
         .add_filter("All Files", &["*"])
-        .set_title("Import Manuscript")
+        .set_title("Replace Manuscript Content")
         .pick_file(move |p| {
             let _ = tx.send(p);
         });
@@ -1242,47 +1165,16 @@ pub async fn save_file_dialog(
     Ok(selected.map(|p| p.to_string()))
 }
 
-#[tauri::command]
-pub async fn batch_import_files(app: AppHandle) -> Result<Vec<FileImportResult>, String> {
-    let (tx, rx) = tokio::sync::oneshot::channel();
-
-    app.dialog()
-        .file()
-        .add_filter("Manuscript Files", &["txt", "docx", "doc", "rtf", "md", "markdown"])
-        .set_title("Import Multiple Manuscripts")
-        .pick_files(move |paths| {
-            let _ = tx.send(paths);
-        });
-
-    let paths_opt = rx.await.map_err(|e| format!("Dialog channel error: {}", e))?;
-    let mut results = Vec::new();
-
-    if let Some(paths) = paths_opt {
-        for path in paths {
-            let path_str = path.to_string();
-            match import_manuscript_file(app.clone(), path_str.clone()).await {
-                Ok(result) => results.push(result),
-                Err(e) => {
-                    eprintln!("Failed to import {}: {}", path_str, e);
-                    // Continue with other files
-                }
-            }
-        }
-    }
-
-    Ok(results)
-}
 
 #[tauri::command]
 pub async fn backup_manuscript(
     _app: AppHandle,
-    manuscript_id: String,
     content: String,
 ) -> Result<String, String> {
     use std::path::Path;
     
     let timestamp = Utc::now().format("%Y%m%d_%H%M%S");
-    let backup_name = format!("backup_{}_{}.txt", manuscript_id, timestamp);
+    let backup_name = format!("manuscript_backup_{}.txt", timestamp);
 
     let backup_dir = Path::new("backups");
     tokio::fs::create_dir_all(&backup_dir)

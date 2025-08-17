@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // output: 'export', // Disabled for dynamic routes
+  output: 'export', // Enable static export for Tauri
+  distDir: 'dist',
   trailingSlash: true,
   skipTrailingSlashRedirect: true,
   eslint: {

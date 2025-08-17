@@ -1,3 +1,6 @@
+// Re-export core types from index.ts for consistency
+export type { Manuscript, Scene, Character, RevisionNote, SceneAnalysis, OpeningAnalysis } from './index'
+
 export interface TechnoThrillerManuscript {
   id: string
   metadata: ManuscriptMetadata

@@ -37,12 +37,14 @@
       "Bash(timeout 15 npm run tauri dev)",
       "Bash(true)",
       "Bash(dir:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(timeout 30s npm run tauri dev)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
-      "C:\\c\\Users\\zeke\\Projects\\narrative-surgeon"
+      "C:\\c\\Users\\zeke\\Projects\\narrative-surgeon",
+      "C:\\c\\Users\\zeke\\Projects"
     ]
   }
 }

@@ -7,18 +7,18 @@ export class TauriAPI {
     return await invoke('create_manuscript_safe', { title, text: content })
   }
 
-  static async loadManuscripts(): Promise<ManuscriptSummary[]> {
-    const result = await invoke('get_manuscripts_safe')
-    return Array.isArray(result) ? result : []
+  static async loadManuscript(): Promise<ManuscriptSummary | null> {
+    const result = await invoke('get_manuscript')
+    return result || null
   }
 
-  static async deleteManuscript(id: string): Promise<{ success: boolean }> {
-    return await invoke('delete_manuscript_safe', { manuscriptId: id })
+  static async deleteManuscript(): Promise<{ success: boolean }> {
+    return await invoke('delete_manuscript_safe')
   }
 
   // Scene Management
-  static async getScenes(manuscriptId: string): Promise<Scene[]> {
-    const result = await invoke('get_scenes_safe', { manuscriptId })
+  static async getScenes(): Promise<Scene[]> {
+    const result = await invoke('get_all_scenes')
     return Array.isArray(result) ? result : []
   }
 

@@ -11,14 +11,14 @@ export default function HomePage() {
   useEffect(() => {
     // Auto-redirect to editor after brief delay
     const timer = setTimeout(() => {
-      router.push('/manuscripts/default/editor')
+      router.push('/editor')
     }, 1000)
     
     return () => clearTimeout(timer)
   }, [router])
 
   const handleDirectEntry = () => {
-    router.push('/manuscripts/default/editor')
+    router.push('/editor')
   }
 
   return (

@@ -26,7 +26,6 @@ export interface LegacyManuscript {
 
 export interface LegacyScene {
   id: string;
-  manuscriptId: string;
   chapterNumber?: number;
   sceneNumberInChapter?: number;
   indexInManuscript: number;
@@ -49,7 +48,6 @@ export interface LegacyScene {
 
 export interface LegacyCharacter {
   id: string;
-  manuscriptId: string;
   name: string;
   role?: string;
   firstAppearanceSceneId?: string;
@@ -278,7 +276,6 @@ export function isLegacyScene(scene: unknown): scene is LegacyScene {
     typeof scene === 'object' &&
     scene !== null &&
     'id' in scene &&
-    'manuscriptId' in scene &&
     'rawText' in scene &&
     'wordCount' in scene &&
     'indexInManuscript' in scene &&
@@ -287,7 +284,6 @@ export function isLegacyScene(scene: unknown): scene is LegacyScene {
     'createdAt' in scene &&
     'updatedAt' in scene &&
     typeof (scene as any).id === 'string' &&
-    typeof (scene as any).manuscriptId === 'string' &&
     typeof (scene as any).rawText === 'string' &&
     typeof (scene as any).wordCount === 'number' &&
     typeof (scene as any).indexInManuscript === 'number' &&
@@ -427,7 +423,6 @@ export function exportToLegacy(modern: ModernManuscript): { manuscript: LegacyMa
 
   const scenes: LegacyScene[] = modern.content.chapters.map((chapter, index) => ({
     id: chapter.id,
-    manuscriptId: modern.id,
     chapterNumber: chapter.number,
     sceneNumberInChapter: 1,
     indexInManuscript: index,
@@ -449,7 +444,6 @@ export function exportToLegacy(modern: ModernManuscript): { manuscript: LegacyMa
 
   const characters: LegacyCharacter[] = modern.content.characters.map(char => ({
     id: char.id,
-    manuscriptId: modern.id,
     name: char.name,
     role: char.role,
     firstAppearanceSceneId: char.firstAppearance,
@@ -490,7 +484,6 @@ export interface SceneAnalysis {
 
 export interface OpeningAnalysis {
   id: string;
-  manuscriptId: string;
   hookType?: string;
   hookStrength?: number;
   voiceEstablished?: boolean;
@@ -513,21 +506,19 @@ export interface ManuscriptSummary {
 }
 
 export interface AnalysisResult {
-  manuscriptId: string;
   summary: string;
   scores?: Record<string, number>;
   recommendations?: string[];
 }
 
 export interface QueryLetter {
-  manuscriptId: string;
   content: string;
   score?: number;
   suggestions?: string[];
 }
 
 export interface ImportResult {
-  manuscripts: LegacyManuscript[];
+  manuscript: LegacyManuscript;
   scenes: LegacyScene[];
   errors?: string[];
 }

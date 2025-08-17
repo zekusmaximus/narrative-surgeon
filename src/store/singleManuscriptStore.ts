@@ -36,10 +36,8 @@ interface SingleManuscriptState {
   
   // Actions
   actions: {
-    // Initialization
+    // Initialization - simplified for single manuscript
     initialize: () => Promise<void>
-    loadManuscript: (manuscriptId: string) => Promise<void>
-    setManuscript: (manuscript: TechnoThrillerManuscript) => void
     
     // Content editing
     updateChapterContent: (chapterId: string, content: string) => void
@@ -95,37 +93,119 @@ const storeConfig: StateCreator<
             set({ isLoading: true, error: null })
             
             try {
-              // Load default manuscript
-              await get().actions.loadManuscript('default')
-            } catch (error) {
-              set({ 
-                error: error instanceof Error ? error.message : 'Failed to initialize',
-                isLoading: false 
-              })
-            }
-          },
-          
-          loadManuscript: async (manuscriptId: string) => {
-            set({ isLoading: true })
-            
-            try {
-              // Create default manuscript structure
-              const defaultManuscript: TechnoThrillerManuscript = {
-                id: manuscriptId,
-                metadata: {
-                  title: 'Untitled Techno-Thriller',
-                  author: 'Author Name',
-                  genre: 'techno-thriller',
-                  wordCount: 0,
-                  characterCount: 0,
-                  chapterCount: 0,
-                  lastModified: new Date(),
+              // Check if we're in a Tauri environment
+              if (typeof window === 'undefined' || !window.__TAURI__) {
+                // In SSR or non-Tauri environment, create a default manuscript
+                const defaultManuscript: TechnoThrillerManuscript = {
+                  id: 'default',
+                  metadata: {
+                    title: 'New Manuscript',
+                    author: 'Author Name',
+                    genre: 'techno-thriller',
+                    wordCount: 0,
+                    characterCount: 0,
+                    chapterCount: 0,
+                    lastModified: new Date(),
+                    created: new Date(),
+                    version: '1.0.0'
+                  },
+                  content: {
+                    chapters: [],
+                    characters: [],
+                    locations: [],
+                    techConcepts: [],
+                    timeline: [],
+                    notes: []
+                  },
+                  versions: new Map(),
+                  currentVersionId: 'original',
+                  settings: {
+                    autoSave: true,
+                    autoSaveInterval: 30,
+                    showWordCount: true,
+                    showCharacterCount: true,
+                    enableConsistencyChecking: true,
+                    highlightInconsistencies: true,
+                    defaultView: 'editor'
+                  }
+                }
+                
+                const originalVersion: ManuscriptVersion = {
+                  id: 'original',
+                  name: 'Original',
+                  description: 'Original chapter order',
+                  chapterOrder: [],
                   created: new Date(),
+                  isBaseVersion: true,
+                  changes: []
+                }
+                
+                defaultManuscript.versions.set('original', originalVersion)
+                
+                set({
+                  manuscript: defaultManuscript,
+                  currentVersion: originalVersion,
+                  availableVersions: [originalVersion],
+                  activeChapterId: null,
+                  isLoading: false,
+                  error: null
+                })
+                return
+              }
+              
+              // Import Tauri invoke function
+              const { invoke } = await import('@tauri-apps/api/tauri')
+              
+              // Load the hardcoded manuscript from database
+              const manuscript = await invoke('get_manuscript') as any
+              const scenes = await invoke('get_all_scenes') as any[]
+              
+              if (!manuscript) {
+                throw new Error('No manuscript found in database')
+              }
+              
+              // Convert database format to store format
+              const chapters = (scenes || []).map((scene, index) => ({
+                id: scene.id,
+                number: scene.chapter_number || index + 1,
+                title: scene.title || `Chapter ${scene.chapter_number || index + 1}`,
+                content: scene.raw_text,
+                wordCount: scene.word_count,
+                originalPosition: scene.index_in_manuscript,
+                currentPosition: scene.index_in_manuscript + 1,
+                dependencies: {
+                  requiredKnowledge: [],
+                  introduces: [],
+                  references: [],
+                  continuityRules: []
+                },
+                metadata: {
+                  pov: scene.pov_character || 'Unknown',
+                  location: scene.location ? [scene.location] : [],
+                  timeframe: scene.time_marker || '',
+                  tensionLevel: 5,
+                  majorEvents: [],
+                  techElements: [],
+                  characterArcs: []
+                }
+              }))
+              
+              const technoManuscript: TechnoThrillerManuscript = {
+                id: manuscript.id,
+                metadata: {
+                  title: manuscript.title,
+                  author: manuscript.author || 'Unknown Author',
+                  genre: manuscript.genre,
+                  wordCount: manuscript.total_word_count,
+                  characterCount: 0,
+                  chapterCount: chapters.length,
+                  lastModified: new Date(manuscript.updated_at),
+                  created: new Date(manuscript.created_at),
                   version: '1.0.0'
                 },
                 content: {
-                  chapters: [],
-                  characters: [],
+                  chapters,
+                  characters: [], // TODO: Load from database
                   locations: [],
                   techConcepts: [],
                   timeline: [],
@@ -148,38 +228,30 @@ const storeConfig: StateCreator<
                 id: 'original',
                 name: 'Original',
                 description: 'Original chapter order',
-                chapterOrder: [],
+                chapterOrder: chapters.map(c => c.id),
                 created: new Date(),
                 isBaseVersion: true,
                 changes: []
               }
               
-              defaultManuscript.versions.set('original', originalVersion)
+              technoManuscript.versions.set('original', originalVersion)
               
               set({
-                manuscript: defaultManuscript,
+                manuscript: technoManuscript,
                 currentVersion: originalVersion,
                 availableVersions: [originalVersion],
+                activeChapterId: chapters[0]?.id || null,
                 isLoading: false,
                 error: null
               })
               
             } catch (error) {
+              console.error('Failed to initialize manuscript:', error)
               set({
-                error: error instanceof Error ? error.message : 'Failed to load manuscript',
+                error: error instanceof Error ? error.message : 'Failed to initialize manuscript',
                 isLoading: false
               })
             }
-          },
-          
-          setManuscript: (manuscript: TechnoThrillerManuscript) => {
-            set({
-              manuscript,
-              currentVersion: manuscript.versions.get(manuscript.currentVersionId) || null,
-              availableVersions: Array.from(manuscript.versions.values()),
-              isLoading: false,
-              error: null
-            })
           },
           
           updateChapterContent: (chapterId: string, content: string) => {
@@ -438,8 +510,48 @@ const storeConfig: StateCreator<
             performanceMonitor.startTimer('saveOperation')
             
             try {
-              // TODO: Implement Tauri save command
-              console.log('Saving manuscript...')
+              const { invoke } = await import('@tauri-apps/api/tauri')
+              
+              // Update manuscript metadata
+              await invoke('update_manuscript', {
+                manuscript: {
+                  id: state.manuscript.id,
+                  title: state.manuscript.metadata.title,
+                  author: state.manuscript.metadata.author,
+                  genre: state.manuscript.metadata.genre,
+                  target_audience: 'Adult', // Default value
+                  comp_titles: 'Various',
+                  created_at: state.manuscript.metadata.created.getTime(),
+                  updated_at: Date.now(),
+                  total_word_count: state.manuscript.metadata.wordCount,
+                  opening_strength_score: 8,
+                  hook_effectiveness: 7
+                }
+              })
+              
+              // Update scenes
+              for (const chapter of state.manuscript.content.chapters) {
+                await invoke('update_scene', {
+                  scene: {
+                    id: chapter.id,
+                    chapter_number: chapter.metadata.chapterNumber,
+                    scene_number_in_chapter: chapter.metadata.sceneNumber,
+                    index_in_manuscript: chapter.currentPosition - 1,
+                    title: chapter.title,
+                    raw_text: chapter.content,
+                    word_count: chapter.wordCount,
+                    is_opening: chapter.metadata.isOpening,
+                    is_chapter_end: chapter.metadata.isChapterEnd,
+                    opens_with_hook: chapter.metadata.opensWithHook,
+                    ends_with_hook: chapter.metadata.endsWithHook,
+                    pov_character: chapter.metadata.pov,
+                    location: chapter.metadata.location,
+                    time_marker: chapter.metadata.timeMarker,
+                    created_at: Date.now(),
+                    updated_at: Date.now()
+                  }
+                })
+              }
               
               set({
                 unsavedChanges: false,
@@ -457,6 +569,7 @@ const storeConfig: StateCreator<
             } catch (error) {
               performanceMonitor.endTimer('saveOperation')
               performanceMonitor.recordError(error as Error)
+              console.error('Save failed:', error)
               throw new Error('Failed to save manuscript')
             }
           },

@@ -21,13 +21,11 @@ import { fullManuscriptAnalyzer } from '@/lib/analysis/FullManuscriptAnalyzer'
 import type { ManuscriptAnalysisReport } from '@/lib/analysis/FullManuscriptAnalyzer'
 
 interface ManuscriptDashboardProps {
-  manuscriptId: string
   content: string
   onAnalysisComplete?: (report: ManuscriptAnalysisReport) => void
 }
 
 export function ManuscriptDashboard({ 
-  manuscriptId, 
   content, 
   onAnalysisComplete 
 }: ManuscriptDashboardProps) {
@@ -41,7 +39,7 @@ export function ManuscriptDashboard({
     if (!analysisReport && content.length > 1000) {
       startAnalysis()
     }
-  }, [content, manuscriptId])
+  }, [content])
 
   const startAnalysis = async () => {
     setIsAnalyzing(true)
@@ -49,7 +47,6 @@ export function ManuscriptDashboard({
 
     try {
       const report = await fullManuscriptAnalyzer.analyzeFullManuscript(
-        manuscriptId,
         content,
         setAnalysisProgress
       )

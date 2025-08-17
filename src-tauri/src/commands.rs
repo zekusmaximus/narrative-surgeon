@@ -58,25 +58,6 @@ async fn log_operation_error(app: &AppHandle, operation: &str, error: &AppError,
 }
 
 // Command validation utilities - made public for testing
-pub fn validate_manuscript_id(id: &str) -> AppResult<()> {
-    if id.is_empty() {
-        return Err(AppError::validation_field(
-            "Manuscript ID cannot be empty",
-            "manuscript_id", 
-            id
-        ));
-    }
-    
-    if !uuid::Uuid::parse_str(id).is_ok() {
-        return Err(AppError::validation_field(
-            "Invalid manuscript ID format",
-            "manuscript_id",
-            id
-        ));
-    }
-    
-    Ok(())
-}
 
 pub fn validate_scene_id(id: &str) -> AppResult<()> {
     if id.is_empty() {
@@ -98,7 +79,7 @@ pub fn validate_scene_id(id: &str) -> AppResult<()> {
     Ok(())
 }
 
-pub fn validate_manuscript_title(title: &str) -> AppResult<()> {
+pub fn validate_title(title: &str) -> AppResult<()> {
     if title.is_empty() {
         return Err(AppError::validation_field(
             "Title cannot be empty",
@@ -119,8 +100,9 @@ pub fn validate_manuscript_title(title: &str) -> AppResult<()> {
 }
 
 // Enhanced database commands with proper error handling
+// Single manuscript mode - get the singleton manuscript
 #[tauri::command]
-pub async fn get_manuscripts_safe(
+pub async fn get_manuscript_safe(
     app: AppHandle,
     db_service: State<'_, DatabaseService>
 ) -> Result<Value, AppError> {
@@ -131,7 +113,7 @@ pub async fn get_manuscripts_safe(
         async move {
             db_service.execute_with_cache(
                 &app,
-                "SELECT id, title, author, genre, created_at, updated_at, total_word_count FROM manuscripts ORDER BY updated_at DESC",
+                "SELECT id, title, author, genre, created_at, updated_at, total_word_count, opening_strength_score, hook_effectiveness FROM manuscripts LIMIT 1",
                 &[]
             ).await
         }
@@ -141,91 +123,58 @@ pub async fn get_manuscripts_safe(
 }
 
 #[tauri::command]
-pub async fn create_manuscript_safe(
+pub async fn update_manuscript_safe(
     app: AppHandle,
     db_service: State<'_, DatabaseService>,
     title: String,
-    text: String,
-    metadata: Option<Value>
+    author: Option<String>,
+    genre: Option<String>
 ) -> Result<Value, AppError> {
     // Validate input
-    validate_manuscript_title(&title)?;
+    validate_title(&title)?;
     
-    if text.len() > 1_000_000 {
-        return Err(AppError::validation_field(
-            "Text content too large (max 1MB)",
-            "text",
-            &format!("{} chars", text.len())
-        ));
-    }
-    
-    let manuscript_id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().timestamp_millis();
-    let word_count = text.split_whitespace().count() as i32;
     
     let result = retry_with_backoff(|| {
         let app = app.clone();
         let db_service = db_service.inner().clone();
-        let manuscript_id = manuscript_id.clone();
         let title = title.clone();
-        let text = text.clone();
+        let author = author.clone();
+        let genre = genre.clone();
         
         async move {
-            // Insert manuscript
+            // Update the singleton manuscript
             db_service.execute_with_cache(
                 &app,
-                "INSERT INTO manuscripts (id, title, created_at, updated_at, total_word_count) VALUES (?, ?, ?, ?, ?)",
+                "UPDATE manuscripts SET title = ?, author = ?, genre = ?, updated_at = ? WHERE id = 'singleton-manuscript'",
                 &[
-                    manuscript_id.clone(),
-                    title.clone(),
-                    now.to_string(),
-                    now.to_string(),
-                    word_count.to_string(),
-                ]
-            ).await?;
-            
-            // Create initial scene
-            let scene_id = uuid::Uuid::new_v4().to_string();
-            db_service.execute_with_cache(
-                &app,
-                "INSERT INTO scenes (id, manuscript_id, index_in_manuscript, title, raw_text, word_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                &[
-                    scene_id,
-                    manuscript_id.clone(),
-                    "0".to_string(),
-                    "Opening Scene".to_string(),
-                    text,
-                    word_count.to_string(),
-                    now.to_string(),
+                    title,
+                    author.unwrap_or_default(),
+                    genre.unwrap_or_default(),
                     now.to_string(),
                 ]
-            ).await?;
-            
-            Ok::<String, AppError>(manuscript_id)
+            ).await
         }
     }, RetryConfig::default()).await?;
     
-    Ok(serde_json::json!({ "id": result }))
+    Ok(serde_json::json!({ "success": true }))
 }
 
 #[tauri::command]
 pub async fn get_scenes_safe(
     app: AppHandle,
-    db_service: State<'_, DatabaseService>,
-    manuscript_id: String
+    db_service: State<'_, DatabaseService>
 ) -> Result<Value, AppError> {
-    validate_manuscript_id(&manuscript_id)?;
-    
     let result = retry_with_backoff(|| {
         let app = app.clone();
         let db_service = db_service.inner().clone();
-        let manuscript_id = manuscript_id.clone();
         
         async move {
+            // Get all scenes for the singleton manuscript
             db_service.execute_with_cache(
                 &app,
-                "SELECT id, manuscript_id, title, raw_text, word_count, index_in_manuscript, created_at, updated_at FROM scenes WHERE manuscript_id = ? ORDER BY index_in_manuscript",
-                &[manuscript_id]
+                "SELECT id, title, raw_text, word_count, chapter_number, scene_number_in_chapter, index_in_manuscript, pov_character, location, created_at, updated_at FROM scenes ORDER BY index_in_manuscript",
+                &[]
             ).await
         }
     }, RetryConfig::default()).await?;
@@ -300,34 +249,87 @@ pub async fn update_scene_safe(
 }
 
 #[tauri::command]
-pub async fn delete_manuscript_safe(
+pub async fn create_scene_safe(
     app: AppHandle,
     db_service: State<'_, DatabaseService>,
-    manuscript_id: String
+    title: String,
+    content: String,
+    chapter_number: Option<i32>,
+    pov_character: Option<String>
 ) -> Result<Value, AppError> {
-    validate_manuscript_id(&manuscript_id)?;
+    // Validate input
+    if content.len() > 500_000 {
+        return Err(AppError::validation_field(
+            "Scene content too large (max 500KB)",
+            "content",
+            &format!("{} chars", content.len())
+        ));
+    }
+    
+    let scene_id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().timestamp_millis();
+    let word_count = content.split_whitespace().count() as i32;
     
     let result = retry_with_backoff(|| {
         let app = app.clone();
         let db_service = db_service.inner().clone();
-        let manuscript_id = manuscript_id.clone();
+        let scene_id = scene_id.clone();
+        let title = title.clone();
+        let content = content.clone();
+        let pov_character = pov_character.clone();
         
         async move {
-            // Delete scenes first (foreign key constraint)
+            // Get the next index
+            let index_result = db_service.execute_with_cache(
+                &app,
+                "SELECT COALESCE(MAX(index_in_manuscript), -1) + 1 as next_index FROM scenes",
+                &[]
+            ).await?;
+            
+            let next_index = 0; // TODO: Parse from index_result
+            
             db_service.execute_with_cache(
                 &app,
-                "DELETE FROM scenes WHERE manuscript_id = ?",
-                &[manuscript_id.clone()]
+                "INSERT INTO scenes (id, index_in_manuscript, title, raw_text, word_count, chapter_number, pov_character, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                &[
+                    scene_id.clone(),
+                    next_index.to_string(),
+                    title,
+                    content,
+                    word_count.to_string(),
+                    chapter_number.map(|n| n.to_string()).unwrap_or_default(),
+                    pov_character.unwrap_or_default(),
+                    now.to_string(),
+                    now.to_string(),
+                ]
             ).await?;
             
-            // Delete manuscript
-            let result = db_service.execute_with_cache(
+            Ok::<String, AppError>(scene_id)
+        }
+    }, RetryConfig::default()).await?;
+    
+    Ok(serde_json::json!({ "id": result }))
+}
+
+#[tauri::command]
+pub async fn delete_scene_safe(
+    app: AppHandle,
+    db_service: State<'_, DatabaseService>,
+    scene_id: String
+) -> Result<Value, AppError> {
+    validate_scene_id(&scene_id)?;
+    
+    let result = retry_with_backoff(|| {
+        let app = app.clone();
+        let db_service = db_service.inner().clone();
+        let scene_id = scene_id.clone();
+        
+        async move {
+            db_service.execute_with_cache(
                 &app,
-                "DELETE FROM manuscripts WHERE id = ?",
-                &[manuscript_id]
-            ).await?;
-            
-            Ok::<Value, AppError>(result)
+                "DELETE FROM scenes WHERE id = ?",
+                &[scene_id]
+            ).await
         }
     }, RetryConfig::default()).await?;
     

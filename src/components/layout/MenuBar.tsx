@@ -28,25 +28,6 @@ export function MenuBar({ className }: MenuBarProps) {
   const { manuscript, editorMode, unsavedChanges } = useSingleManuscriptStore()
   const { saveManuscript, setEditorMode } = useSingleManuscriptStore(state => state.actions)
 
-  const handleNewManuscript = () => {
-    if (confirm('Create a new manuscript? This will replace the current one.')) {
-      window.location.reload()
-    }
-  }
-
-  const handleOpenManuscript = () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = '.txt,.docx,.md'
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (file) {
-        console.log('Opening file:', file.name)
-        // TODO: Implement file import functionality
-      }
-    }
-    input.click()
-  }
 
   const handleSave = () => {
     saveManuscript()
@@ -185,41 +166,11 @@ export function MenuBar({ className }: MenuBarProps) {
     // TODO: Implement grammar check functionality
   }
 
-  const handleImportText = () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = '.txt,.md'
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (file) {
-        console.log('Importing text from:', file.name)
-        // TODO: Implement text import functionality
-      }
-    }
-    input.click()
-  }
-
-  const handleBatchImport = () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.multiple = true
-    input.accept = '.txt,.md'
-    input.onchange = (e) => {
-      const files = Array.from((e.target as HTMLInputElement).files || [])
-      if (files.length > 0) {
-        console.log('Batch importing files:', files.map(f => f.name))
-        // TODO: Implement batch import functionality
-      }
-    }
-    input.click()
-  }
 
   const handleKeyboardShortcuts = () => {
     alert(`Keyboard Shortcuts:
     
 File:
-• Ctrl+N - New Manuscript
-• Ctrl+O - Open Manuscript
 • Ctrl+S - Save
 • Ctrl+Shift+S - Save As
 
@@ -309,15 +260,6 @@ A professional manuscript editor for chapter reordering and consistency checking
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-48">
-          <DropdownMenuItem onClick={handleNewManuscript}>
-            New Manuscript
-            <DropdownMenuShortcut>Ctrl+N</DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleOpenManuscript}>
-            Open Manuscript
-            <DropdownMenuShortcut>Ctrl+O</DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSave}>
             Save
             <DropdownMenuShortcut>Ctrl+S</DropdownMenuShortcut>
@@ -494,13 +436,6 @@ A professional manuscript editor for chapter reordering and consistency checking
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleGrammarCheck}>
             Grammar Check
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleImportText}>
-            Import Text
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleBatchImport}>
-            Batch Import
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

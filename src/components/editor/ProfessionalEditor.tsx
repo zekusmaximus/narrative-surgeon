@@ -7,7 +7,6 @@ import { MainLayout } from '../layout/MainLayout'
 import { ChapterReorderPanel } from '../reordering/ChapterReorderPanel'
 import { VersionControlPanel } from '../versioning/VersionControlPanel'
 import { useSingleManuscriptStore } from '@/store/singleManuscriptStore'
-import { loadDefaultManuscript } from '@/lib/manuscript-loader'
 import { useGlobalShortcuts } from '@/lib/shortcuts'
 import { ErrorBoundary } from '../ErrorBoundary'
 import {
@@ -36,11 +35,10 @@ import {
 } from 'lucide-react'
 
 interface ProfessionalEditorProps {
-  manuscriptId: string
   sceneId?: string
 }
 
-export function ProfessionalEditor({ manuscriptId }: ProfessionalEditorProps) {
+export function ProfessionalEditor({ sceneId }: ProfessionalEditorProps) {
   const editorRef = useRef<EditorRef>(null)
   const [selectedText, setSelectedText] = useState('')
   const [showFindReplace, setShowFindReplace] = useState(false)
@@ -53,7 +51,7 @@ export function ProfessionalEditor({ manuscriptId }: ProfessionalEditorProps) {
   } = useSingleManuscriptStore()
   
   const {
-    setManuscript,
+    initialize,
     updateChapterContent,
     setActiveChapter,
     saveManuscript
@@ -65,24 +63,10 @@ export function ProfessionalEditor({ manuscriptId }: ProfessionalEditorProps) {
 
   // Initialize manuscript on component mount
   useEffect(() => {
-    const initializeManuscript = async () => {
-      if (!manuscript) {
-        try {
-          const defaultManuscript = await loadDefaultManuscript()
-          setManuscript(defaultManuscript)
-          
-          // Set first chapter as active if available
-          if (defaultManuscript.content.chapters.length > 0) {
-            setActiveChapter(defaultManuscript.content.chapters[0].id)
-          }
-        } catch (error) {
-          console.error('Failed to load manuscript:', error)
-        }
-      }
+    if (!manuscript) {
+      initialize()
     }
-    
-    initializeManuscript()
-  }, [manuscript, setManuscript, setActiveChapter])
+  }, [manuscript, initialize])
 
   // Enable global keyboard shortcuts
   useGlobalShortcuts()
@@ -227,7 +211,6 @@ export function ProfessionalEditor({ manuscriptId }: ProfessionalEditorProps) {
                           updateChapterContent(activeChapterId, content)
                         }
                       }}
-                      manuscriptId={manuscriptId}
                       sceneId={activeChapterId || undefined}
                       onSave={saveManuscript}
                       placeholder="Begin writing your story..."

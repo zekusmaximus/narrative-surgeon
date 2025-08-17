@@ -24,7 +24,6 @@ pub struct Manuscript {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Scene {
     pub id: String,
-    pub manuscript_id: String,
     pub chapter_number: Option<i32>,
     pub scene_number_in_chapter: Option<i32>,
     pub index_in_manuscript: u32,
@@ -67,7 +66,6 @@ pub struct UpdateModuleStatusRequest {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchRequest {
     pub query: String,
-    pub manuscript_id: Option<String>,
     pub case_sensitive: bool,
     pub whole_words: bool,
     pub regex: bool,
@@ -77,8 +75,6 @@ pub struct SearchRequest {
 pub struct SearchResult {
     pub scene_id: String,
     pub scene_title: Option<String>,
-    pub manuscript_id: String,
-    pub manuscript_title: String,
     pub matches: Vec<SearchMatch>,
     pub total_matches: u32,
 }
@@ -100,7 +96,6 @@ pub struct BatchSceneRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReorderRequest {
-    pub manuscript_id: String,
     pub scene_id: String,
     pub new_index: u32,
 }
@@ -115,7 +110,6 @@ pub struct RenameRequest {
 pub struct BackupMetadata {
     pub backup_id: String,
     pub created_at: i64,
-    pub manuscript_count: u32,
     pub total_scenes: u32,
     pub file_size: u64,
     pub compression_ratio: f32,
@@ -166,6 +160,17 @@ impl DatabaseService {
         let mut cache = self.cache.write().await;
         cache.retain(|key, _| !key.contains(pattern));
     }
+
+    // Placeholder method for database operations
+    pub async fn execute_with_cache(
+        &self,
+        _app: &AppHandle,
+        _query: &str,
+        _params: &[String]
+    ) -> AppResult<serde_json::Value> {
+        // TODO: Implement actual database operations with SQLx
+        Err(AppError::database("Database operations not yet implemented"))
+    }
 }
 
 // Validation functions
@@ -215,37 +220,22 @@ fn _calculate_word_count(text: &str) -> u32 {
 
 // PLACEHOLDER IMPLEMENTATIONS - TODO: Replace with SQLx
 
-// MANUSCRIPT CRUD OPERATIONS
+// MANUSCRIPT OPERATIONS (Single manuscript mode)
 
-pub async fn get_all_manuscripts_impl(_app: &AppHandle) -> AppResult<Vec<Manuscript>> {
-    // TODO: Implement with SQLx
-    Err(AppError::database("Database operations not yet implemented"))
-}
-
-pub async fn get_manuscript_impl(_app: &AppHandle, _id: String) -> AppResult<Option<Manuscript>> {
-    // TODO: Implement with SQLx
-    Err(AppError::database("Database operations not yet implemented"))
-}
-
-pub async fn create_manuscript_impl(_app: &AppHandle, _manuscript: Manuscript) -> AppResult<String> {
-    // TODO: Implement with SQLx
+pub async fn get_manuscript_impl(_app: &AppHandle) -> AppResult<Option<Manuscript>> {
+    // TODO: Implement with SQLx - get the singleton manuscript
     Err(AppError::database("Database operations not yet implemented"))
 }
 
 pub async fn update_manuscript_impl(_app: &AppHandle, _manuscript: Manuscript) -> AppResult<()> {
-    // TODO: Implement with SQLx
-    Err(AppError::database("Database operations not yet implemented"))
-}
-
-pub async fn delete_manuscript_impl(_app: &AppHandle, _id: String) -> AppResult<()> {
-    // TODO: Implement with SQLx
+    // TODO: Implement with SQLx - update the singleton manuscript
     Err(AppError::database("Database operations not yet implemented"))
 }
 
 // SCENE CRUD OPERATIONS
 
-pub async fn get_manuscript_scenes_impl(_app: &AppHandle, _manuscript_id: String) -> AppResult<Vec<Scene>> {
-    // TODO: Implement with SQLx
+pub async fn get_all_scenes_impl(_app: &AppHandle) -> AppResult<Vec<Scene>> {
+    // TODO: Implement with SQLx - get all scenes for the singleton manuscript
     Err(AppError::database("Database operations not yet implemented"))
 }
 
@@ -333,38 +323,20 @@ pub async fn clear_all_dirty_flags_impl(_app: &AppHandle) -> AppResult<()> {
 // TAURI COMMAND WRAPPERS
 
 #[tauri::command]
-pub async fn get_all_manuscripts(app: AppHandle) -> Result<Vec<Manuscript>, String> {
-    get_all_manuscripts_impl(&app).await
+pub async fn get_manuscript(app: AppHandle) -> Result<Option<Manuscript>, String> {
+    get_manuscript_impl(&app).await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn get_manuscript(app: AppHandle, id: String) -> Result<Option<Manuscript>, String> {
-    get_manuscript_impl(&app, id).await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub async fn create_manuscript(app: AppHandle, manuscript: Manuscript) -> Result<String, String> {
-    create_manuscript_impl(&app, manuscript).await
+pub async fn get_all_scenes(app: AppHandle) -> Result<Vec<Scene>, String> {
+    get_all_scenes_impl(&app).await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn update_manuscript(app: AppHandle, manuscript: Manuscript) -> Result<(), String> {
     update_manuscript_impl(&app, manuscript).await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub async fn delete_manuscript(app: AppHandle, id: String) -> Result<(), String> {
-    delete_manuscript_impl(&app, id).await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub async fn get_manuscript_scenes(app: AppHandle, manuscript_id: String) -> Result<Vec<Scene>, String> {
-    get_manuscript_scenes_impl(&app, manuscript_id).await
         .map_err(|e| e.to_string())
 }
 
