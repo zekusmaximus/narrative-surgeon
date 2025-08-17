@@ -108,7 +108,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                         <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2">
                           Manuscripts
                         </h3>
-                        {manuscripts.map((manuscript) => (
+                        {manuscripts?.map((manuscript) => (
                           <div
                             key={manuscript.id}
                             className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${
