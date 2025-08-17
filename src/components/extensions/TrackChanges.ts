@@ -42,8 +42,8 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
         attributes: {
           'track-change-id': {
             default: null,
-            parseHTML: element => element.getAttribute('track-change-id'),
-            renderHTML: attributes => {
+            parseHTML: (element: HTMLElement) => element.getAttribute('track-change-id'),
+            renderHTML: (attributes: Record<string, any>) => {
               if (!attributes['track-change-id']) {
                 return {};
               }
@@ -54,8 +54,8 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
           },
           'track-change-type': {
             default: null,
-            parseHTML: element => element.getAttribute('track-change-type'),
-            renderHTML: attributes => {
+            parseHTML: (element: HTMLElement) => element.getAttribute('track-change-type'),
+            renderHTML: (attributes: Record<string, any>) => {
               if (!attributes['track-change-type']) {
                 return {};
               }
@@ -66,8 +66,8 @@ export const TrackChangesExtension = Extension.create<TrackChangesOptions>({
           },
           'track-change-author': {
             default: null,
-            parseHTML: element => element.getAttribute('track-change-author'),
-            renderHTML: attributes => {
+            parseHTML: (element: HTMLElement) => element.getAttribute('track-change-author'),
+            renderHTML: (attributes: Record<string, any>) => {
               if (!attributes['track-change-author']) {
                 return {};
               }

@@ -36,7 +36,8 @@
       "Bash(cargo clean:*)",
       "Bash(timeout 15 npm run tauri dev)",
       "Bash(true)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

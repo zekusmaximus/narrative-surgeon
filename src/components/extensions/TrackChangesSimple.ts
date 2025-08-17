@@ -1,4 +1,4 @@
-import { Extension, Commands } from '@tiptap/core';
+import { Extension, type Commands } from '@tiptap/core';
 
 interface TrackChangesOptions {
   enabled: boolean;

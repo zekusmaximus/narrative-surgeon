@@ -2,7 +2,7 @@
 
 import React, { useEffect, useImperativeHandle, forwardRef, useCallback, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
-import { Editor, Extension, Node } from '@tiptap/core'
+import { Editor, Node as TiptapNode, Extension } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -23,7 +23,7 @@ import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 /**
  * Custom Scene Break extension with proper typing
  */
-const SceneBreak = Node.create({
+const SceneBreak = TiptapNode.create({
   name: 'sceneBreak',
   group: 'block',
   content: '',
@@ -70,7 +70,7 @@ const SceneBreak = Node.create({
 /**
  * Custom Chapter Division extension with proper typing
  */
-const ChapterDivision = Node.create({
+const ChapterDivision = TiptapNode.create({
   name: 'chapterDivision',
   group: 'block',
   content: 'inline*',
