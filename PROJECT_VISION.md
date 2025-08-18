@@ -1,403 +1,266 @@
-# PROJECT VISION - Single Manuscript AI Revision System
-
-## 🎯 SINGLE OVERRIDING GOAL
-
-**Transform ONE specific, professionally-edited manuscript into its optimal form for agent submission by using AI to analyze and guide strategic chapter reordering, especially for starting in medias res.**
-
+PROJECT VISION - Single Manuscript AI Revision System (v2.0)
+🎯 SINGLE OVERRIDING GOAL
+Transform ONE professionally-edited manuscript into its optimal form for agent submission by using AI to identify the best opening (scene or composite) and generate all required revisions with minimal edit burden.
 This is a SINGLE-USE, BESPOKE application for ONE AUTHOR, ONE MANUSCRIPT, ONE SUBMISSION CYCLE.
 
----
+📖 THE MANUSCRIPT
 
-## 📖 THE MANUSCRIPT
+Status: Professionally edited, well-written prose
+Need: Strategic opening selection for maximum market impact
+Strategy: Start in medias res with high-impact scene(s)
+Challenge: Maintaining narrative coherence with minimal revisions
 
-- **Status**: Professionally edited, well-written prose
-- **Need**: Strategic restructuring for maximum market impact
-- **Key Strategy**: Potentially start in medias res (high action scene)
-- **Challenge**: Maintaining narrative coherence after any reordering
 
----
-
-## 🚀 CORE FUNCTIONALITY NEEDED
-
-### 1. Manuscript Ingestion & AI Knowledge
-**Purpose**: Make AI intimately familiar with entire manuscript
-
-**Implementation**:
-```
-- Load complete manuscript (all chapters with full text)
-- Create chapter summaries and dependency maps
-- Build knowledge base for AI to reference
-- Store character arcs, plot points, reveals
-- Track tension levels per chapter
-```
-
-**Success Metric**: AI can answer "What happens in Chapter 17?" or "When is Sarah's betrayal revealed?" or "Which chapters have the highest action?"
-
-### 2. Strategic Opening Analysis
-**Purpose**: AI helps identify optimal opening chapter
-
-**Key Questions AI Must Answer**:
-- "Which chapters would make compelling openings?"
-- "What's the tension/action level of each chapter?"
-- "Which chapters could work as standalone hooks?"
-- "What are the trade-offs of starting with each?"
-
-**AI Analysis Output**:
-```markdown
-Potential Opening Chapters Ranked:
-
-1. Chapter 23 (Action: 9/10, Hook: 10/10)
-   - Pros: Immediate tension, vivid scene
-   - Cons: Requires context about the virus
-   - Changes needed: 14 specific edits
-
-2. Chapter 15 (Action: 8/10, Hook: 8/10)  
-   - Pros: Character conflict, lower context needs
-   - Cons: Reveals relationship dynamics early
-   - Changes needed: 7 specific edits
-
-3. Chapter 1 (Current) (Action: 3/10, Hook: 5/10)
-   - Pros: No changes needed, sets up world
-   - Cons: Slow burn, may lose impatient readers
-```
-
-### 3. Intelligent Reordering Analysis
-**Purpose**: AI identifies all impacts of any chapter reordering
-
-**For ANY Reordering Decision**:
-- "If I start with Chapter [X], what context is missing?"
-- "What spoilers does Chapter [X] contain?"
-- "Which chapters need modification?"
-- "What should become flashbacks vs linear narrative?"
-- "How does this affect story arc and tension curve?"
-
-**Implementation**:
-```
-- Test multiple opening scenarios
-- Analyze ripple effects through manuscript
-- Identify specific line/paragraph changes
-- Suggest flashback placement
-- Recommend transition strategies
-```
-
-### 4. Revision Guidance System
-**Purpose**: Specific, actionable revision instructions
-
-**AI Outputs**:
-- Line-by-line changes needed in affected chapters
-- New transition paragraphs to write
-- Specific sentences that spoil unrevealed information
-- Recommended flashback insertion points
-- Timeline consistency issues
-- POV adjustments needed
-
-**Format**: 
-```markdown
-Starting with Chapter [X] - Required Changes:
-
-Chapter X Modifications:
-- Line 47: References "the virus" - reader doesn't know about this yet
-  SOLUTION: Change to "the mysterious outbreak" 
-- Line 132: Mentions Sarah's betrayal - happens in Chapter 15
-  SOLUTION: Cut this line, make it internal tension instead
-- Missing Context: Reader needs to know about Marcus's expertise
-  SOLUTION: Add 2-paragraph flashback after line 78
-
-Ripple Effects:
-- Chapter 3: Remove callback to opening scene
-- Chapter 7: Adjust timeline reference
-- Chapter 12: Change "as mentioned" to full explanation
-```
-
-### 5. Version Control System (Simplified)
-**Purpose**: Save and compare different reordering experiments
-
-**Features**:
-```typescript
-interface Version {
+🚀 CORE FUNCTIONALITY - THE OPENING LAB
+1. Scene-Level Analysis (Not Chapter-Level)
+Purpose: Find the best opening at the right granularity
+Implementation:
+typescriptinterface Scene {
   id: string
-  name: string  // "Original", "Start Ch23", "Start Ch15 + Flashbacks"
-  description: string
-  chapterOrder: number[]
-  modifications: Map<chapterId, TextChanges>
-  created: Date
-  aiAnalysis: AnalysisResult
-  isBaseVersion: boolean  // Can stamp as new baseline
-}
-```
-
-**Capabilities**:
-- Save current state as version
-- Compare any two versions
-- Stamp version as new baseline
-- Revert to any saved version
-- See AI analysis for each version
-
-**What This is NOT**:
-- Not Git-level complexity
-- Not branching/merging
-- Just snapshots of different arrangements
-
----
-
-## 🛠️ IMPLEMENTATION PLAN
-
-### Phase 1: Manuscript Knowledge Base (Week 1)
-```typescript
-// 1. Create manuscript data structure
-interface ManuscriptKnowledge {
-  chapters: Array<{
-    number: number
-    title: string
-    fullText: string
-    summary: string        // 2-3 sentences
-    reveals: string[]      // Major revelations
-    requires: string[]     // Required prior knowledge
-    characters: string[]   // Characters appearing
-    tensionLevel: number   // 1-10 scale
-    actionLevel: number    // 1-10 scale
-    hookStrength: number   // 1-10 scale
-    wordCount: number
-  }>
-  characterArcs: Map<string, ChapterEvent[]>
-  plotThreads: Map<string, ChapterMention[]>
-  timeline: TimelineEvent[]
-}
-
-// 2. Load manuscript from file/paste
-// 3. Generate summaries and scores using AI
-// 4. Build dependency graph
-```
-
-### Phase 2: Opening Analysis & Recommendations (Week 2)
-```typescript
-// 1. Analyze all chapters for opening potential
-async function analyzeOpeningOptions(
-  manuscript: ManuscriptKnowledge
-): Promise<OpeningRecommendations[]>
-
-// 2. For each potential opening, calculate impact
-async function calculateReorderingImpact(
-  startChapter: number,
-  manuscript: ManuscriptKnowledge
-): Promise<ImpactAnalysis>
-
-// 3. Rank options by various criteria
-interface OpeningCriteria {
-  maximizeAction: boolean
-  minimizeRevisions: boolean
-  preserveChronology: boolean
-  marketAppeal: 'literary' | 'commercial' | 'genre'
-}
-```
-
-### Phase 3: Revision Workflow with Versions (Week 3)
-```typescript
-// 1. Create version for each experiment
-async function createVersion(
-  name: string,
-  chapterOrder: number[],
-  analysis: AIAnalysis
-): Promise<Version>
-
-// 2. Apply and track modifications
-interface RevisionTask {
-  versionId: string
-  chapter: number
-  location: LineRange
-  issue: string
-  suggestion: string
-  priority: 'critical' | 'important' | 'minor'
-  completed: boolean
-}
-
-// 3. Compare versions
-async function compareVersions(
-  versionA: string,
-  versionB: string
-): Promise<VersionComparison>
-
-// 4. Stamp as new baseline
-async function setBaselineVersion(
-  versionId: string
-): Promise<void>
-```
-
-### Phase 4: Validation & Export (Week 4)
-```typescript
-// 1. Final coherence check for selected version
-async function validateVersion(
-  versionId: string
-): Promise<ValidationReport>
-
-// 2. Export in submission format
-async function exportForSubmission(
-  versionId: string
-): Promise<SubmissionPackage>
-```
-
----
-
-## 🎮 USER WORKFLOW
-
-1. **Load Manuscript** → Import complete manuscript
-2. **AI Analysis** → System learns manuscript structure
-3. **Explore Options** → "Show me high-action opening chapters"
-4. **Review Recommendations** → See AI ranking of options
-5. **Pick Starting Point** → "Try starting with Chapter 15"
-6. **Save Version** → "Save as 'Ch15 Opening'"
-7. **Review Changes** → See required modifications
-8. **Apply Revisions** → Make changes in editor
-9. **Save New Version** → "Save as 'Ch15 Opening - Revised'"
-10. **Compare** → See differences between versions
-11. **Stamp Baseline** → "Make this my new working version"
-12. **Continue Experimenting** → Try other arrangements
-13. **Export** → Get submission-ready manuscript
-
----
-
-## 💡 KEY DECISIONS
-
-### What We're Building
-✅ AI analysis of optimal chapter ordering  
-✅ Multiple opening options with trade-off analysis  
-✅ Specific line-level change recommendations  
-✅ Simple version control for experiments  
-✅ Dependency and spoiler detection  
-✅ Flashback placement guidance  
-✅ Timeline consistency checking  
-
-### What We're NOT Building
-❌ General purpose writing tool  
-❌ Multiple manuscript support  
-❌ Collaborative features  
-❌ Complex Git-style version control  
-❌ Publishing/submission tracking beyond export  
-❌ Grammar/style checking  
-❌ Character development tools  
-
-### Technology Choices
-- **AI**: Claude 3.5 Sonnet (primary) - best for long context
-- **Fallback**: GPT-4 Turbo - if Claude unavailable
-- **No RAG needed** - manuscript small enough for context window
-- **No vector DB needed** - direct text processing sufficient
-- **Simple version storage** - JSON snapshots, not Git
-
----
-
-## 📊 SUCCESS METRICS
-
-1. **AI correctly identifies high-impact opening chapters**
-2. **AI provides specific, line-level revision instructions**
-3. **Version system allows easy experimentation**
-4. **Can compare impact of different arrangements**
-5. **Final manuscript maintains narrative coherence**
-6. **Process takes less than 2 weeks from load to export**
-
----
-
-## ⚡ QUICK WINS PATH
-
-### Day 1-2: Get AI Working
-```javascript
-// Find best opening chapters
-async function findOpenings() {
-  const chapters = loadAllChapters()
-  const analyses = []
+  chapterId: string
+  text: string
+  summary: string
+  anchorHash: string  // First/last 12 chars for stable reference
   
-  for (const chapter of chapters) {
-    const analysis = await claude.complete(`
-      Analyze this chapter as a potential novel opening:
-      ${chapter.text}
-      
-      Rate 1-10: action, hook strength, standalone clarity
-      List: required context, spoilers contained
-    `)
-    analyses.push(analysis)
+  // Scoring (calibrated with exemplars)
+  hookScore: number      // Based on rubric + examples
+  tensionScore: number   // Conflict density + stakes
+  clarityScore: number   // Understandable without context
+  
+  // Content tracking
+  characters: string[]
+  reveals: RevealRef[]   // What facts are exposed
+  requires: string[]     // What reader must know first
+  
+  // Metadata
+  beats: StoryBeat[]
+  location?: string
+  timeRef?: string       // Absolute or relative
+}
+Scene Segmentation:
+
+Break chapters into scenes (rule-based + AI assist)
+Detect natural breaks: location changes, time jumps, POV shifts
+Each scene gets unique anchor hash for stable reference
+
+2. Reveal Graph & Spoiler Detection
+Purpose: Track what the reader knows when
+Implementation:
+typescriptinterface Reveal {
+  id: string
+  description: string           // "Sarah is the mole"
+  firstExposureSceneId: string  // Where first revealed
+  preReqs: string[]             // Other reveals needed first
+  type: 'plot' | 'character' | 'world' | 'backstory'
+}
+
+interface SpoilerViolation {
+  revealId: string
+  mentionedIn: TextAnchor  // Quoted span + hash
+  shouldAppearIn: string    // Scene where it's properly revealed
+  severity: 'critical' | 'moderate' | 'minor'
+  fix: AnchoredEdit
+}
+Spoiler Heatmap: Visual/textual map showing violations when scene X opens
+3. Opening Lab - Decision Support
+Purpose: Compare up to 5 opening candidates side-by-side
+Candidates Can Be:
+
+Single scene
+Composite (Scene 23a → micro-flashback → Scene 23b)
+Multi-scene sequence
+
+For Each Candidate, Calculate:
+typescriptinterface OpeningAnalysis {
+  candidate: OpeningCandidate
+  
+  // Scores (calibrated)
+  hookStrength: number
+  clarityUnderColdStart: number
+  marketAppeal: number
+  
+  // Problems
+  spoilerViolations: SpoilerViolation[]
+  missingContext: ContextGap[]
+  
+  // Solutions
+  editBurden: {
+    newWords: number
+    changedSpans: number
+    percentOfText: number
   }
+  requiredPatches: AnchoredEdit[]
+  bridgeParagraphs: BridgeDraft[]
   
-  return rankByOpeningPotential(analyses)
+  // Visualization
+  tensionCurve: number[]  // Before/after
 }
-```
-
-### Day 3-4: Test Arrangements
-```javascript
-// Test specific reordering
-async function testReorder(startChapter) {
-  const manuscript = loadManuscript()
+4. Anchored Recommendations (Not Line Numbers)
+Purpose: Recommendations that survive editing
+Every Edit References:
+typescriptinterface AnchoredEdit {
+  anchor: TextAnchor  // Quoted text + hash
+  sceneId: string
   
-  const prompt = `
-    I want to start my novel with Chapter ${startChapter}.
-    Current order: ${manuscript.chapterOrder}
-    
-    Chapter ${startChapter} text: ${manuscript.chapters[startChapter]}
-    Other chapter summaries: ${manuscript.summaries}
-    
-    What specific changes are needed?
-  `
+  original: string    // "Sarah's voice, guilty and thin"
+  suggested: string   // "Sarah's voice, low and thin"
+  reason: string      // "Removes premature reveal of guilt"
   
-  return await claude.complete(prompt)
+  type: 'replace' | 'insert' | 'delete'
+  priority: 'critical' | 'important' | 'optional'
 }
-```
 
-### Day 5-6: Simple Versions
-```javascript
-// Save arrangement as version
-function saveVersion(name, order, changes) {
-  const version = {
-    id: Date.now(),
-    name,
-    chapterOrder: order,
-    modifications: changes,
-    created: new Date()
-  }
-  
-  versions.push(version)
-  if (setAsBaseline) currentVersion = version.id
+interface TextAnchor {
+  quotedSpan: string    // Actual text (15-30 chars)
+  hash: string          // Stable identifier
+  context: string       // Surrounding text for verification
 }
-```
+5. Lightweight Retrieval (Not Full RAG)
+Purpose: Precise lookups without complexity
+Implementation:
 
-### Day 7: Export & Compare
-- Compare 2-3 best arrangements
-- Choose optimal version
-- Export submission-ready manuscript
+Local index of scenes, reveals, dependencies
+Quick search: "Where is X first mentioned?"
+Cross-reference validation
+No external services, no vector DB overhead
 
----
+Use Cases:
 
-## 🚨 REMEMBER
+Find all mentions of a character
+Locate first reveal of plot point
+Verify timeline references
+Check for contradiction
 
-**This is for ONE manuscript, for ONE submission cycle.**
 
-Every feature decision should answer: "Does this help me find and implement the optimal chapter arrangement?"
+🛠️ IMPLEMENTATION PLAN - LEAN & FOCUSED
+Phase 1: Skeleton (Days 1-3)
+bash# Core functionality, no UI
+- Scene segmentation from chapters
+- Extract reveals, characters, timeline
+- Build reveal graph
+- Generate scene inventory report
+Deliverable: Scene inventory with initial scores
+Phase 2: Opening Lab (Days 4-7)
+bash# Decision support system
+- Score potential openings (3-5 candidates)
+- Generate spoiler heatmaps
+- Calculate missing context
+- Compute edit burden
+- Export comparison report (Markdown/PDF)
+Deliverable: Opening comparison report with recommendations
+Phase 3: Patch Packs (Days 8-11)
+bash# Specific revision guidance
+- Generate anchored micro-edits
+- Draft bridge paragraphs
+- Create side-by-side diffs
+- Overlay tension curves
+Deliverable: Detailed revision instructions with anchored edits
+Phase 4: Export & Validate (Days 12-14)
+bash# Submission-ready output
+- Apply selected revisions
+- Run continuity checks
+- Generate DOCX with/without Track Changes
+- Create synopsis (1-2 pages)
+- Write "Why this opening" memo
+Deliverable: Agent submission bundle
 
-If the answer is no, DON'T BUILD IT.
+📊 SUCCESS METRICS - OUTCOME FOCUSED
+Must-Have Metrics
 
-Version control should be SIMPLE - just saving snapshots of different arrangements, not complex branching.
+Opening decision confidence ≥ 80% (you're certain it's the right choice)
+Zero spoiler violations in final version
+Edit burden ≤ 10% of opening pages
+Cold-reader retention: 2 of 3 readers continue past page 5
 
----
+Nice-to-Have Metrics
 
-## 📝 Current Status Checklist
+Continuity score: 100% (no timeline/fact contradictions)
+Submission bundle complete in under 2 weeks
+Version comparison clarity (can see exactly what changed)
 
-- [ ] Manuscript loaded into system
-- [ ] AI can access full text
-- [ ] All chapters analyzed for opening potential
-- [ ] Best opening options identified
-- [ ] Selected starting chapter
-- [ ] Dependencies mapped for new order
-- [ ] Required changes identified
-- [ ] Version saved with changes
-- [ ] Changes applied to text
-- [ ] New version created and validated
-- [ ] Can compare versions
-- [ ] Final version selected
-- [ ] Manuscript exported for submission
 
----
+💡 CRITICAL DECISIONS
+What We're Building
+✅ Opening Lab - Compare 3-5 scene-based openings
+✅ Reveal Graph - Track what reader knows when
+✅ Spoiler Heatmap - Visual violation detection
+✅ Anchored Edits - Survive text changes
+✅ Bridge Paragraphs - AI-drafted transitions
+✅ Export Bundle - DOCX + synopsis + memo
+What We're NOT Building
+❌ Full manuscript reordering (just opening)
+❌ Complex UI (reports + exports are enough)
+❌ Real-time editing (batch revisions)
+❌ Multiple manuscripts
+❌ Publishing workflow beyond submission
+Technology Choices
 
-## 🎯 NORTH STAR
+AI: Claude 3.5 Sonnet (primary), GPT-4 Turbo (backup)
+Retrieval: Local index, no external DB
+Anchoring: Quoted spans + hashes, not line numbers
+Versions: Diffs + patches, not just snapshots
+Privacy: Local-only processing, no external retention
 
-When complete, you should be able to say:
 
-> "The AI analyzed my entire manuscript and showed me that Chapters 15, 23, and 31 would make the strongest openings. I tested all three arrangements, saved each as a version, and could see exactly what changes each required. I chose Chapter 15, applied the AI's specific revision suggestions, and now my manuscript opens with compelling action while maintaining perfect narrative coherence. I can switch between my versions to compare them or continue refining."
+⚡ EXAMPLE OUTPUT - ANCHORED RECOMMENDATION
+markdownOPENING CANDIDATE: Scene 23a (Warehouse Raid)
 
-**THAT'S THE MISSION. STRATEGIC REORDERING WITH AI GUIDANCE.**
+SPOILER VIOLATIONS: 2 found
+
+1. REVEAL S-014: "Sarah is the mole"
+   FOUND IN: "Sarah's voice, guilty and thin" [Scene 23a, anchor d3fa...a9]
+   FIX: Replace "guilty" with "low"
+   REASON: Premature reveal of Sarah's betrayal (properly revealed Scene 47)
+
+2. REVEAL S-007: "Virus is engineered"  
+   FOUND IN: "a lab-born heat that licks" [Scene 23a, anchor 8b21...33]
+   FIX: Replace "lab-born" with "unnatural"
+   REASON: Reveals artificial origin too early
+
+MISSING CONTEXT: 3 items
+
+1. WHO IS MARCUS?
+   INSERT AFTER: "Marcus checked his watch" [anchor c2e9...15]
+   DRAFT: "Marcus, fifteen years of field ops etched in his movements"
+
+2. RAID OBJECTIVE?
+   INSERT AFTER: "We moved toward the door" [anchor a411...22]
+   DRAFT: "The coolant keys had to be here—Jensen's last intel was never wrong"
+
+3. WHERE/WHEN?
+   INSERT AT: Opening of scene [anchor 0000...00]
+   DRAFT: "Dockside. 03:12. Rain hammered the tin roof like accusations"
+
+EDIT BURDEN: 7.3% of text (acceptable)
+
+🚨 CORE PRINCIPLES
+
+Scenes are atoms, not chapters
+Anchors are references, not line numbers
+Reveals are tracked, creating spoiler detection
+Edit burden is measured, keeping changes minimal
+Cold-reader clarity is the north star
+
+
+📝 CURRENT STATUS
+
+ Manuscript loaded and segmented into scenes
+ Reveal graph built and validated
+ Opening candidates identified (3-5 scenes)
+ Spoiler heatmaps generated
+ Edit burden calculated for each
+ Opening selected with confidence
+ Anchored edits generated
+ Bridge paragraphs drafted
+ Revisions applied
+ Continuity validated
+ Export bundle created
+ Cold-reader test passed
+
+
+🎯 NORTH STAR - OUTCOME
+When complete, you can say:
+
+"The Opening Lab analyzed my manuscript at the scene level and showed me exactly how starting with Scene 23a would work—including a spoiler heatmap showing two reveals that needed fixing, three pieces of missing context to add, and the exact 7% edit burden. Every recommendation was anchored to quoted text that survived my edits. I applied the changes, validated continuity, and exported a submission bundle with the new opening, updated synopsis, and a one-page 'Why this opening' memo for agents."
+
+THAT'S THE DELIVERABLE. A SUBMISSION-READY OPENING WITH MINIMAL, PRECISE REVISIONS.
